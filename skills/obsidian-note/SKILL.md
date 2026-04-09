@@ -24,6 +24,7 @@ Invoke this skill when the user wants to:
 - Save a personal reflection, dev tip, or work note
 - Update an existing note with new content
 - "Make a note of…", "Add to my notes…", "Write this down…"
+- View their todo/task list — "what's on my todo?", "show my tasks", "what do I need to do?"
 
 > **Do NOT use for meeting notes/transcripts** — those are handled by `obsidian-meeting-manage`.
 
@@ -170,23 +171,35 @@ tags:
 
 #### Updating an existing note
 
-1. Read current content:
+1. **Always read the file first** — before writing anything, read the current content:
    ```bash
    obsidian read file="<note name>"
    ```
    Or read directly from the file path.
-2. Merge/append new content intelligently:
+2. **Analyse the existing structure** — identify the formatting conventions used:
+   - Does it use `## headings` with prose, or flat `- [ ] checklist` items, or bullet lists, or a table?
+   - What is the tone/verbosity of existing entries?
+   - Are there recurring patterns (e.g. emoji prefixes, nesting depth, date stamps)?
+3. **Match the existing structure exactly** — new content must blend in:
+   - Use the same list style (`- [ ]`, `-`, `*`, numbered) as the surrounding entries
+   - Use the same heading level and style if adding under a section
+   - Use the same nesting depth and indentation
+   - **Do not introduce new formatting conventions** (e.g. don't add `##` headings to a flat checklist file, don't add prose paragraphs to a bullet-list file)
+4. Merge/append new content:
    - Append under the relevant existing section heading if it exists
-   - Add a new `## <Section>` heading if the topic is new
+   - Add a new `## <Section>` heading only if the rest of the file also uses `##` headings
    - **Do not duplicate** content already present
-3. Write the updated file back directly (preserving frontmatter).
+5. Write the updated file back directly (preserving frontmatter).
 
 #### Appending to special files (`💡Ideas.md`, `🍽️ Plate.md`)
 
-Use the CLI append command:
-```bash
-obsidian append file="💡Ideas" content="- <new idea>"
-```
+1. **Read the file first** to understand its structure (see "Updating an existing note" above).
+2. Format the new entry to match the existing style exactly.
+3. Use the CLI append command only if the formatted content is a simple single-line entry:
+   ```bash
+   obsidian append file="💡Ideas" content="- <new idea>"
+   ```
+   For multi-line or structured entries, write the file directly to ensure correct formatting.
 
 #### Fallback
 
@@ -203,6 +216,21 @@ Report:
   ```bash
   obsidian open path="<relative path from vault root>"
   ```
+
+---
+
+## Todo Report
+
+See **[todo-report.md](todo-report.md)** for full instructions.
+
+Triggered when user asks: *"what's on my todo?"*, *"show my tasks"*, *"what do I need to do?"*
+
+Summary:
+1. Run `obsidian tasks todo`
+2. Filter out wishlist / shopping items
+3. Group by topic (ARB, SunnyEurope, SwissSense, Vaimo, Dev/Tools, Personal)
+4. Sort by priority (🔺⏫🔼 → none → 🔽⏬), then by due date (`📅`) soonest first
+5. Render grouped markdown report; put overdue/due-today tasks at the top
 
 ---
 
@@ -227,6 +255,10 @@ Report:
 **Meeting note → delegation:**
 > User: *"Add notes from my call with Ivan today about ARB"*
 > Skill: detects meeting signals → delegates to `obsidian-meeting-manage`
+
+**Todo report:**
+> User: *"What's on my todo?"*
+> Skill: runs `obsidian tasks todo`, filters/groups/sorts the output, renders the report
 
 ---
 
