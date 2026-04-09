@@ -29,4 +29,5 @@
 ## Outputs
 
 - PR review artifacts in `$PROJECT_ROOT/.agents/artifacts/`.
+- PR diff artifact `pr-<pr-no>-diff.patch` in `$PROJECT_ROOT/.agents/artifacts/`, including PR metadata in top comment lines (title, author, description, etc.).
 - Jira summary artifact `pr-<pr-no>-issue-summary.md` when Jira step is used.

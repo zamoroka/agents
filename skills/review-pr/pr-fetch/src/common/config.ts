@@ -1,6 +1,6 @@
 import { join, resolve } from 'node:path';
 import { config as dotenvConfig } from 'dotenv';
-import * as env from 'env-var';
+import env from 'env-var';
 import type { Config } from '../types/index.js';
 
 let configCache: Config | undefined;

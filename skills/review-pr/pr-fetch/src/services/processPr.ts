@@ -1,4 +1,7 @@
+import { mkdir, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { getConfig } from '../common/index.js';
+import { getProjectRoot } from '../common/index.js';
 import type { ParsedPrUrl } from '../types/index.js';
 import { getDiff, getDiffStat, getPullRequest, getPullRequestComments } from './bitbucketApiClient.js';
 
@@ -78,8 +81,45 @@ const printComments = (comments: Awaited<ReturnType<typeof getPullRequestComment
   }
 };
 
+const toCommentLines = (label: string, value: string): string[] => {
+  if (!value) {
+    return [`# ${label}:`];
+  }
+
+  const lines = value.split(/\r?\n/);
+  if (lines.length === 1) {
+    return [`# ${label}: ${lines[0]}`];
+  }
+
+  return [`# ${label}:`, ...lines.map((line) => `#   ${line}`)];
+};
+
+const buildPatchHeader = (pr: Awaited<ReturnType<typeof getPullRequest>>, parsed: ParsedPrUrl): string => {
+  const headerLines = [
+    '# Bitbucket PR metadata',
+    `# URL: ${parsed.originalUrl}`,
+    `# Provider: ${parsed.provider}`,
+    `# Workspace: ${parsed.workspace || ''}`,
+    `# Repository: ${parsed.repo || ''}`,
+    `# PR Number: ${parsed.prNumber}`,
+    `# Title: ${pr.title || ''}`,
+    `# Author: ${pr.author?.display_name || ''}`,
+    `# State: ${pr.state || ''}`,
+    `# Source Branch: ${pr.source?.branch?.name || ''}`,
+    `# Destination Branch: ${pr.destination?.branch?.name || ''}`,
+    `# Created: ${pr.created_on || ''}`,
+    `# Updated: ${pr.updated_on || ''}`,
+    ...toCommentLines('Description', pr.description || ''),
+    '# End Bitbucket PR metadata',
+    '',
+  ];
+
+  return `${headerLines.join('\n')}\n`;
+};
+
 export const processPr = async ({ provider, prUrl }: { provider: string; prUrl: string }): Promise<void> => {
   const config = getConfig();
+  const projectRoot = getProjectRoot();
   const parsed = parsePrUrl(provider, prUrl);
 
   if (parsed.provider === 'github') {
@@ -123,18 +163,35 @@ export const processPr = async ({ provider, prUrl }: { provider: string; prUrl: 
   printComments(comments);
 
   const diffUrl = pr.links?.diff?.href;
+  let diffContent = '';
   if (diffUrl) {
-    const diff = await getDiff({
+    diffContent = await getDiff({
       url: diffUrl,
       email: config.bitbucketEmail,
       token: config.bitbucketToken,
     });
     process.stdout.write('\n--- DIFF ---\n');
-    process.stdout.write(diff);
-    if (!diff.endsWith('\n')) {
+    process.stdout.write(diffContent);
+    if (!diffContent.endsWith('\n')) {
       process.stdout.write('\n');
     }
   }
+
+  const artifactsDir = join(projectRoot, '.agents', 'artifacts');
+  const diffArtifactPath = join(artifactsDir, `pr-${parsed.prNumber}-diff.patch`);
+  const patchHeader = buildPatchHeader(pr, parsed);
+  const patchContent = `${patchHeader}${diffContent}`;
+  try {
+    await writeFile(diffArtifactPath, patchContent, 'utf8');
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+      throw error;
+    }
+
+    await mkdir(artifactsDir, { recursive: true });
+    await writeFile(diffArtifactPath, patchContent, 'utf8');
+  }
+  process.stdout.write(`Saved diff artifact: ${diffArtifactPath}\n`);
 
   process.stdout.write(`\n${line}\n`);
   process.stdout.write(`PR #${parsed.prNumber} fetched successfully!\n`);

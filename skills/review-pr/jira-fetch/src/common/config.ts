@@ -1,6 +1,6 @@
 import { join, resolve } from 'node:path';
 import { config as dotenvConfig } from 'dotenv';
-import * as env from 'env-var';
+import env from 'env-var';
 import type { Config } from '../types/index.js';
 
 let configCache: Config | undefined;
@@ -29,7 +29,7 @@ export const getConfig = (): Config => {
     jiraApiToken: env.get('AGENT_CODEREVIEW_JIRA_TOKEN').required().asString(),
     jiraEmail: env.get('AGENT_CODEREVIEW_JIRA_EMAIL').default('').asString(),
     openaiApiKey: env.get('OPENAI_API_KEY').required().asString(),
-    openaiModel: env.get('AGENT_CODEREVIEW_OPENAI_MODEL').default('gpt-4.1-mini').asString(),
+    openaiModel: env.get('AGENT_CODEREVIEW_OPENAI_MODEL').default('gpt-5.4-nano').asString(),
   };
 
   return configCache;

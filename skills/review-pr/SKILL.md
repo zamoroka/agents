@@ -60,7 +60,12 @@ For each missing variable, ask the user to provide the value (ask all missing va
 Also ensure `.env.local` is listed in `$PROJECT_ROOT/.gitignore`. If it is not, append `.env.local` to the `.gitignore` file.
 
 > **Token note:** `AGENT_CODEREVIEW_BITBUCKET_TOKEN` must be an Atlassian API token (from https://id.atlassian.com/manage-profile/security/api-tokens), not a Bitbucket App Password.
-> **Jira note:** `AGENT_CODEREVIEW_JIRA_URL` should look like `https://jira.example.com` and `AGENT_CODEREVIEW_JIRA_TOKEN` must be a Jira API/PAT token that can read issues.
+>
+> **Jira token note:** Authentication method depends on Jira hosting type:
+> - **Self-hosted Jira (Server / Data Center):** Generate a PAT from *Profile → Personal Access Tokens*. Leave `AGENT_CODEREVIEW_JIRA_EMAIL` unset — the client will use Bearer auth automatically.
+> - **Jira Cloud:** Use an Atlassian API token from https://id.atlassian.com/manage-profile/security/api-tokens. You must also add `AGENT_CODEREVIEW_JIRA_EMAIL` (your Atlassian account email) to `.env.local` — the client uses Basic auth (`email:token`) for Cloud.
+>
+> If you receive a 401 on the Jira fetch step, check which type of token is being used and whether `AGENT_CODEREVIEW_JIRA_EMAIL` is needed.
 
 ---
 
@@ -69,11 +74,11 @@ Also ensure `.env.local` is listed in `$PROJECT_ROOT/.gitignore`. If it is not, 
 Run the Bitbucket Node module, passing the project root:
 
 ```bash
-npm install --prefix ~/.agents/skills/revew-pr
-PROJECT_ROOT="{PROJECT_ROOT}" npm --prefix ~/.agents/skills/revew-pr --workspace pr-fetch run fetch:pr -- bitbucket {PR_URL}
+npm install --prefix ~/.agents/skills/review-pr
+PROJECT_ROOT="{PROJECT_ROOT}" npm --prefix ~/.agents/skills/review-pr --workspace pr-fetch run fetch:pr -- bitbucket {PR_URL}
 ```
 
-This outputs PR details, comments, changed files, and full diff to stdout.
+This outputs PR details, comments, changed files, and full diff to stdout, and saves the diff artifact to `$PROJECT_ROOT/.agents/artifacts/pr-{PR_NUMBER}-diff.patch` with Bitbucket metadata in comment lines at the top (title, author, description, and related PR fields).
 
 ---
 
@@ -98,8 +103,8 @@ Run the Jira Node entrypoint with the detected Jira key (for example `SUNNYR-25`
 Command:
 
 ```bash
-npm install --prefix ~/.agents/skills/revew-pr
-PROJECT_ROOT="{PROJECT_ROOT}" npm --prefix ~/.agents/skills/revew-pr --workspace jira-fetch run fetch:jira -- {PR_NUMBER} {ISSUE_KEY}
+npm install --prefix ~/.agents/skills/review-pr
+PROJECT_ROOT="{PROJECT_ROOT}" npm --prefix ~/.agents/skills/review-pr --workspace jira-fetch run fetch:jira -- {PR_NUMBER} {ISSUE_KEY}
 ```
 
 ---
@@ -146,7 +151,7 @@ Merge findings from all launched agents.
 
 ## Step 9 — Assemble and save artifacts
 
-Ensure `$PROJECT_ROOT/.agents/artifacts/` exists (`mkdir -p`).
+Assume `$PROJECT_ROOT/.agents/artifacts/` already exists. Create it only if artifact write fails due to missing directory.
 
 Save two files:
 
@@ -190,8 +195,8 @@ Display the full review in the terminal.
 
 ## Notes
 
-- For Bitbucket PR fetch, use `npm --prefix ~/.agents/skills/revew-pr --workspace pr-fetch run fetch:pr -- bitbucket {PR_URL}`.
+- For Bitbucket PR fetch, use `npm --prefix ~/.agents/skills/review-pr --workspace pr-fetch run fetch:pr -- bitbucket {PR_URL}`.
 - For GitHub PR URLs, respond with `not supported yet`.
-- Use `npm --prefix ~/.agents/skills/revew-pr --workspace jira-fetch run fetch:jira -- {PR_NUMBER} {ISSUE_KEY}` to fetch and summarize Jira ticket data for the PR.
+- Use `npm --prefix ~/.agents/skills/review-pr --workspace jira-fetch run fetch:jira -- {PR_NUMBER} {ISSUE_KEY}` to fetch and summarize Jira ticket data for the PR.
 - Create a todo list before starting.
 - When citing AGENTS.md rules, quote the relevant rule text directly.

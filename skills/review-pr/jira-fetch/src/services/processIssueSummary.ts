@@ -37,8 +37,16 @@ export const processIssueSummary = async ({
   const outputPath = join(artifactsDir, `pr-${prNumber}-issue-summary.md`);
   const output = buildArtifactContent({ prNumber, issueKey, summary });
 
-  await mkdir(artifactsDir, { recursive: true });
-  await writeFile(outputPath, output, 'utf8');
+  try {
+    await writeFile(outputPath, output, 'utf8');
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+      throw error;
+    }
+
+    await mkdir(artifactsDir, { recursive: true });
+    await writeFile(outputPath, output, 'utf8');
+  }
 
   logger.info('Saved issue summary artifact', { outputPath });
 
