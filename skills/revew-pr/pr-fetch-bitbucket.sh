@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Bitbucket PR Review Script
-# Usage: PROJECT_ROOT=/path/to/project bitbucket-fetch-pr.sh <PR_NUMBER>
+# Usage: PROJECT_ROOT=/path/to/project pr-fetch-bitbucket.sh <PR_NUMBER>
 
 set -e
 
@@ -30,7 +30,7 @@ if [ -z "$BITBUCKET_EMAIL" ] || [ -z "$BITBUCKET_TOKEN" ] || [ -z "$BITBUCKET_WO
 fi
 
 if [ -z "$1" ]; then
-    echo "Usage: PROJECT_ROOT=/path/to/project bitbucket-fetch-pr.sh <PR_NUMBER>"
+    echo "Usage: PROJECT_ROOT=/path/to/project pr-fetch-bitbucket.sh <PR_NUMBER>"
     exit 1
 fi
 

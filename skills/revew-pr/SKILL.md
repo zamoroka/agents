@@ -1,13 +1,12 @@
 ---
-name: code-review
-version: 2.0.0
-description: "Open interactive code review for current changes or a PR URL"
+name: revew-pr
+description: "Reviews Bitbucket pull requests, summarizes diffs, and produces inline findings artifacts. Use when the user asks to review a PR, inspect PR changes, or run a pull request code review."
 metadata:
-  openclaw:
-    category: "engineering"
+  version: "2.0.0"
+  category: "engineering"
 ---
 
-# code-review
+# revew-pr
 
 Review a Bitbucket pull request. Findings are displayed in the terminal and saved as artifacts under `<project>/.agents/artifacts/`.
 
@@ -36,6 +35,9 @@ AGENT_CODEREVIEW_BITBUCKET_EMAIL
 AGENT_CODEREVIEW_BITBUCKET_TOKEN
 AGENT_CODEREVIEW_BITBUCKET_WORKSPACE
 AGENT_CODEREVIEW_BITBUCKET_REPO
+AGENT_CODEREVIEW_JIRA_URL
+AGENT_CODEREVIEW_JIRA_TOKEN
+OPENAI_API_KEY
 ```
 
 For each missing variable, ask the user to provide the value (ask all missing variables at once in a single prompt, not one by one). Then append the missing variables to `$PROJECT_ROOT/.env.local`.
@@ -43,6 +45,7 @@ For each missing variable, ask the user to provide the value (ask all missing va
 Also ensure `.env.local` is listed in `$PROJECT_ROOT/.gitignore`. If it is not, append `.env.local` to the `.gitignore` file.
 
 > **Token note:** `AGENT_CODEREVIEW_BITBUCKET_TOKEN` must be an Atlassian API token (from https://id.atlassian.com/manage-profile/security/api-tokens), not a Bitbucket App Password.
+> **Jira note:** `AGENT_CODEREVIEW_JIRA_URL` should look like `https://jira.example.com` and `AGENT_CODEREVIEW_JIRA_TOKEN` must be a Jira API/PAT token that can read issues.
 
 ---
 
@@ -51,14 +54,28 @@ Also ensure `.env.local` is listed in `$PROJECT_ROOT/.gitignore`. If it is not, 
 Run the fetch script, passing the project root:
 
 ```bash
-PROJECT_ROOT="{PROJECT_ROOT}" bash ~/.agents/skills/code-review/bitbucket-fetch-pr.sh {PR_NUMBER}
+PROJECT_ROOT="{PROJECT_ROOT}" bash ~/.agents/skills/revew-pr/pr-fetch-bitbucket.sh {PR_NUMBER}
 ```
 
 This outputs the PR details and full diff to stdout.
 
 ---
 
-## Step 3 — Load relevant AGENTS.md files
+## Step 3 — Gather and summarize Jira ticket
+
+Run the Jira script. It extracts the Jira key from PR title/branch/description (for example `SUNNYR-25`), fetches the ticket, summarizes it with a small OpenAI model, and writes:
+
+- `$PROJECT_ROOT/.agents/artifacts/pr-{PR_NUMBER}-issue-summary.md`
+
+Command:
+
+```bash
+PROJECT_ROOT="{PROJECT_ROOT}" bash ~/.agents/skills/revew-pr/pr-fetch-jira.sh {PR_NUMBER}
+```
+
+---
+
+## Step 4 — Load relevant AGENTS.md files
 
 Launch an agent (model: haiku) to return a list of file paths (not their contents) for all relevant `AGENTS.md` files including:
 - The root `AGENTS.md` at `$PROJECT_ROOT/AGENTS.md`
@@ -66,13 +83,13 @@ Launch an agent (model: haiku) to return a list of file paths (not their content
 
 ---
 
-## Step 4 — Summarise the PR
+## Step 5 — Summarise the PR
 
 Launch an agent (model: sonnet) to view the pull request diff and return a concise summary of the changes.
 
 ---
 
-## Step 5 — Review
+## Step 6 — Review
 
 Launch 2 agents in parallel to independently review the changes. Each agent MUST return issues in this exact structured format — one JSON object per issue:
 
@@ -85,20 +102,20 @@ Launch 2 agents in parallel to independently review the changes. Each agent MUST
 - `severity` — one of: `error`, `warning`, `suggestion`
 - `description` — what the issue is, why it was flagged, and how to fix it
 
-**Before flagging any issue that claims "this won't work", "this will break X", or "this overrides/replaces Y":**
-- The agent MUST read the relevant source files in the codebase to verify the claim is actually true.
-- Specifically: if the concern is about how a framework, Magento core, or third-party library processes the changed code, read the actual processing logic in `vendor/` or the relevant module before asserting the behavior.
-- **Evidence requirement**: When the issue depends on framework/library behavior, the agent MUST include a verbatim code snippet from the source file it read (with file path and line range) in the issue description as proof. If the agent cannot produce this snippet, it MUST drop the issue.
-- If after reading the code the claim cannot be confirmed, drop the issue entirely. Never flag based on assumed behavior.
-- **Never rely on general knowledge of how a method works.** Always read the actual implementation in this specific codebase — vendor code may be patched, overridden, or behave differently than the canonical version.
+Before review, load and apply rules from `review-guardrails.md`.
+If the PR is a pure deletion, also apply `deletion-pr-checklist.md`.
 
-**Agent 1 (model: opus): code-quality-pragmalist**
+First, launch 1 local agent (model: sonnet) to compare the PR diff with `$PROJECT_ROOT/.agents/artifacts/pr-{PR_NUMBER}-issue-summary.md` and decide if implementation matches ticket scope. Return mismatches in the same issue JSON format (`line` can be `0` when mismatch is not line-specific).
 
-**Agent 2 (model: opus): claude-md-compliance-checker**
+Run both agents with distinct focus:
+- **Agent 1 (model: opus): code-quality-pragmalist**
+- **Agent 2 (model: opus): claude-md-compliance-checker**
+
+Merge all findings from all three agents.
 
 ---
 
-## Step 6 — Assemble and save artifacts
+## Step 7 — Assemble and save artifacts
 
 Ensure `$PROJECT_ROOT/.agents/artifacts/` exists (`mkdir -p`).
 
@@ -135,32 +152,16 @@ Display the full review in the terminal.
 
 ---
 
-## False positive list
+## Additional references
 
-Do NOT flag the following (these are not real issues):
-
-- Pre-existing issues
-- Something that appears to be a bug but is actually correct
-- Pedantic nitpicks that a senior engineer would not flag
-- Issues that a linter will catch
-- General code quality concerns (e.g., lack of test coverage, general security issues) unless explicitly required in AGENTS.md
-- Issues mentioned in AGENTS.md but explicitly silenced in the code (e.g., via a lint ignore comment)
-
----
-
-## Deletion PR checklist
-
-When the PR is a pure deletion (modules/files being removed), the standard code quality checklist shifts. Focus on:
-
-- **Orphaned references** in non-deleted files (composer.json require entries, patches/ directory, app/etc/hyva-themes.json, other XML di/config files referencing removed classes)
-- **DB schema leftovers** — if any deleted module has `db_schema.xml`, its tables/columns will persist in the DB after `setup:upgrade`. Flag with the required manual SQL (`DROP TABLE` / `ALTER TABLE DROP COLUMN`)
-- **config.php completeness** — all removed modules must be deregistered
-- Skip pre-existing code quality issues in the deleted code itself
+- `review-guardrails.md` — behavior-claim evidence rule, reviewer scopes, and false-positive filters
+- `deletion-pr-checklist.md` — extra checks for pure-deletion PRs
 
 ---
 
 ## Notes
 
-- Use `~/.agents/skills/code-review/bitbucket-fetch-pr.sh` to fetch PR data. Do not use web fetch or any other API calls.
+- Use `~/.agents/skills/revew-pr/pr-fetch-bitbucket.sh` to fetch PR data. Do not use web fetch or any other API calls.
+- Use `~/.agents/skills/revew-pr/pr-fetch-jira.sh` to fetch and summarize Jira ticket data for the PR.
 - Create a todo list before starting.
 - When citing AGENTS.md rules, quote the relevant rule text directly.
