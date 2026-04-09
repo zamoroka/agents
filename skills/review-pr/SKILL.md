@@ -1,14 +1,14 @@
 ---
-name: revew-pr
+name: review-pr
 description: "Reviews Bitbucket pull requests, summarizes diffs, and produces inline findings artifacts. Use when the user asks to review a PR, inspect PR changes, or run a pull request code review."
 metadata:
   version: "2.0.0"
   category: "engineering"
 ---
 
-# revew-pr
+# review-pr
 
-Review a Bitbucket pull request. Findings are displayed in the terminal and saved as artifacts under `<project>/.agents/artifacts/`.
+Review a pull request. Findings are displayed in the terminal and saved as artifacts under `<project>/.agents/artifacts/`.
 
 **Agent assumptions (applies to all agents and subagents):**
 
@@ -17,7 +17,24 @@ Review a Bitbucket pull request. Findings are displayed in the terminal and save
 
 ---
 
-## Step 0 — Detect project root
+## Step 0 — Ask for PR URL
+
+Ask the user for the pull request URL.
+
+When provided, validate format and detect provider:
+- Bitbucket PR URL format: `https://bitbucket.org/<workspace>/<repo>/pull-requests/<number>`
+- GitHub PR URL format: `https://github.com/<owner>/<repo>/pull/<number>`
+
+If provider is GitHub: respond with `not supported yet` and stop.
+
+Extract and store:
+- `PR_URL`
+- `PR_PROVIDER` (`bitbucket`)
+- `PR_NUMBER`
+
+---
+
+## Step 1 — Detect project root
 
 Check if the current working directory contains an `AGENTS.md` file.
 
@@ -26,15 +43,13 @@ Check if the current working directory contains an `AGENTS.md` file.
 
 ---
 
-## Step 1 — Bootstrap `.env.local`
+## Step 2 — Bootstrap `.env.local`
 
 Check `$PROJECT_ROOT/.env.local` for the following variables:
 
 ```
 AGENT_CODEREVIEW_BITBUCKET_EMAIL
 AGENT_CODEREVIEW_BITBUCKET_TOKEN
-AGENT_CODEREVIEW_BITBUCKET_WORKSPACE
-AGENT_CODEREVIEW_BITBUCKET_REPO
 AGENT_CODEREVIEW_JIRA_URL
 AGENT_CODEREVIEW_JIRA_TOKEN
 OPENAI_API_KEY
@@ -49,33 +64,47 @@ Also ensure `.env.local` is listed in `$PROJECT_ROOT/.gitignore`. If it is not, 
 
 ---
 
-## Step 2 — Fetch PR data
+## Step 3 — Fetch PR data
 
-Run the fetch script, passing the project root:
+Run the Bitbucket Node module, passing the project root:
 
 ```bash
-PROJECT_ROOT="{PROJECT_ROOT}" bash ~/.agents/skills/revew-pr/pr-fetch-bitbucket.sh {PR_NUMBER}
+npm install --prefix ~/.agents/skills/revew-pr
+PROJECT_ROOT="{PROJECT_ROOT}" npm --prefix ~/.agents/skills/revew-pr --workspace pr-fetch run fetch:pr -- bitbucket {PR_URL}
 ```
 
-This outputs the PR details and full diff to stdout.
+This outputs PR details, comments, changed files, and full diff to stdout.
 
 ---
 
-## Step 3 — Gather and summarize Jira ticket
+## Step 4 — Determine Jira issue key
 
-Run the Jira script. It extracts the Jira key from PR title/branch/description (for example `SUNNYR-25`), fetches the ticket, summarizes it with a small OpenAI model, and writes:
+The main agent must detect Jira issue key from PR data (title, branch, description, comments, changed files).
+
+Always ask user to confirm detected key.
+- If detected: ask `I found {ISSUE_KEY}. Correct?`
+- If not detected: ask user to provide Jira issue key, or confirm skipping Jira step.
+
+If user says PR is not related to Jira, skip Step 5 and Step 7 ticket-alignment check.
+
+---
+
+## Step 5 — Gather and summarize Jira ticket
+
+Run the Jira Node entrypoint with the detected Jira key (for example `SUNNYR-25`). It fetches the ticket, summarizes it with a small OpenAI model, and writes:
 
 - `$PROJECT_ROOT/.agents/artifacts/pr-{PR_NUMBER}-issue-summary.md`
 
 Command:
 
 ```bash
-PROJECT_ROOT="{PROJECT_ROOT}" bash ~/.agents/skills/revew-pr/pr-fetch-jira.sh {PR_NUMBER}
+npm install --prefix ~/.agents/skills/revew-pr
+PROJECT_ROOT="{PROJECT_ROOT}" npm --prefix ~/.agents/skills/revew-pr --workspace jira-fetch run fetch:jira -- {PR_NUMBER} {ISSUE_KEY}
 ```
 
 ---
 
-## Step 4 — Load relevant AGENTS.md files
+## Step 6 — Load relevant AGENTS.md files
 
 Launch an agent (model: haiku) to return a list of file paths (not their contents) for all relevant `AGENTS.md` files including:
 - The root `AGENTS.md` at `$PROJECT_ROOT/AGENTS.md`
@@ -83,13 +112,13 @@ Launch an agent (model: haiku) to return a list of file paths (not their content
 
 ---
 
-## Step 5 — Summarise the PR
+## Step 7 — Summarise the PR
 
-Launch an agent (model: sonnet) to view the pull request diff and return a concise summary of the changes.
+Launch an agent to view the pull request diff and return a concise summary of the changes.
 
 ---
 
-## Step 6 — Review
+## Step 8 — Review
 
 Launch 2 agents in parallel to independently review the changes. Each agent MUST return issues in this exact structured format — one JSON object per issue:
 
@@ -105,17 +134,17 @@ Launch 2 agents in parallel to independently review the changes. Each agent MUST
 Before review, load and apply rules from `review-guardrails.md`.
 If the PR is a pure deletion, also apply `deletion-pr-checklist.md`.
 
-First, launch 1 local agent (model: sonnet) to compare the PR diff with `$PROJECT_ROOT/.agents/artifacts/pr-{PR_NUMBER}-issue-summary.md` and decide if implementation matches ticket scope. Return mismatches in the same issue JSON format (`line` can be `0` when mismatch is not line-specific).
+If Jira step was not skipped, first launch 1 local agent to compare PR diff with `$PROJECT_ROOT/.agents/artifacts/pr-{PR_NUMBER}-issue-summary.md` and decide if implementation matches ticket scope. Return mismatches in the same issue JSON format (`line` can be `0` when mismatch is not line-specific).
 
 Run both agents with distinct focus:
-- **Agent 1 (model: opus): code-quality-pragmalist**
-- **Agent 2 (model: opus): claude-md-compliance-checker**
+- **Agent 1 (model: sonnet): code-quality-pragmalist**
+- **Agent 2 (model: sonnet): compliance-checker**
 
-Merge all findings from all three agents.
+Merge findings from all launched agents.
 
 ---
 
-## Step 7 — Assemble and save artifacts
+## Step 9 — Assemble and save artifacts
 
 Ensure `$PROJECT_ROOT/.agents/artifacts/` exists (`mkdir -p`).
 
@@ -128,7 +157,7 @@ Format:
 {If no issues: "✅ No issues found"}
 {If issues: "⚠️ {N} issue(s) found — see inline comments"}
 
-🤖 *Reviewed by Claude Code ({MODEL_ID})*
+🤖 *Reviewed by Agent ({MODEL_ID})*
 ```
 
 **b. Inline comments** → `$PROJECT_ROOT/.agents/artifacts/pr-review-{PR_NUMBER}-inline.json`
@@ -139,12 +168,12 @@ Format:
   {
     "path": "app/code/Vaimo/Module/File.php",
     "line": 42,
-    "content": "**warning** — Description of the issue and suggested fix\n\n🤖 *Reviewed by Claude Code ({MODEL_ID})*"
+    "content": "**warning** — Description of the issue and suggested fix\n\n🤖 *Reviewed by Agent ({MODEL_ID})*"
   }
 ]
 ```
 
-Only include issues where `line > 0`. Format each `content` field as: `**{severity}** — {description}\n\n🤖 *Reviewed by Claude Code ({MODEL_ID})*`.
+Only include issues where `line > 0`. Format each `content` field as: `**{severity}** — {description}\n\n🤖 *Reviewed by Agent ({MODEL_ID})*`.
 
 If no issues were found, write an empty array `[]` to the inline JSON file.
 
@@ -161,7 +190,8 @@ Display the full review in the terminal.
 
 ## Notes
 
-- Use `~/.agents/skills/revew-pr/pr-fetch-bitbucket.sh` to fetch PR data. Do not use web fetch or any other API calls.
-- Use `~/.agents/skills/revew-pr/pr-fetch-jira.sh` to fetch and summarize Jira ticket data for the PR.
+- For Bitbucket PR fetch, use `npm --prefix ~/.agents/skills/revew-pr --workspace pr-fetch run fetch:pr -- bitbucket {PR_URL}`.
+- For GitHub PR URLs, respond with `not supported yet`.
+- Use `npm --prefix ~/.agents/skills/revew-pr --workspace jira-fetch run fetch:jira -- {PR_NUMBER} {ISSUE_KEY}` to fetch and summarize Jira ticket data for the PR.
 - Create a todo list before starting.
 - When citing AGENTS.md rules, quote the relevant rule text directly.

@@ -12,6 +12,7 @@ For claims like "won't work", "breaks X", or "overrides Y":
 
 ## Reviewer scopes
 
+- `pr-ticket-alignment-checker`: compare PR diff against `pr-{PR_NUMBER}-issue-summary.md`; flag missing ticket requirements or out-of-scope implementation.
 - `code-quality-pragmalist`: correctness, runtime risk, logic defects, API misuse, and missing edge-case handling.
 - `claude-md-compliance-checker`: compliance with `AGENTS.md` rules, required project conventions, and mandated file/format patterns.
 
