@@ -34,6 +34,14 @@ Invoke this skill when the user wants to:
 
 Follow these steps precisely when this skill is invoked.
 
+### Command usage policy
+
+Use Obsidian CLI commands for discovery efficiency (mainly search and relationship discovery between notes).
+
+- Prefer `obsidian search` to find candidate notes, related topics, and nearby context.
+- For note updates, edit markdown files directly at the vault path.
+- For note creation, default to direct markdown file creation; CLI create/append is optional only when it is clearly faster.
+
 ### Step 1 — Gather input
 
 **If no content was provided in the prompt:**
@@ -103,6 +111,8 @@ Before creating a new file, check for duplicates:
 obsidian search query="<2–3 key topic terms>"
 ```
 
+Also run 1-2 focused follow-up searches with related terms to find connected notes that should be cross-referenced or updated instead of creating a duplicate.
+
 - **Match found** (same topic / same folder / same title intent) → plan to **UPDATE** that note
 - **No match** → plan to **CREATE** a new note
 
@@ -148,7 +158,7 @@ Minimum **2 tags** per note.
 
 #### Creating a new note
 
-Prefer direct file creation to ensure correct YAML frontmatter and tags:
+Prefer direct markdown file creation to ensure correct YAML frontmatter and tags:
 
 1. Determine full path: `VAULT_ROOT/<folder>/<Title>.md`
 2. Write the file with this format:
@@ -163,19 +173,15 @@ tags:
 
 <Content>
 ```
-3. If a template-only scaffold is sufficient, use CLI:
+3. If a template-only scaffold is sufficient, you may use CLI:
    ```bash
    obsidian create name="<Title>" template=note
    ```
-   Then overwrite with correct YAML + content via direct file operation.
+   Then finalize YAML + content via direct file operation.
 
 #### Updating an existing note
 
-1. **Always read the file first** — before writing anything, read the current content:
-   ```bash
-   obsidian read file="<note name>"
-   ```
-   Or read directly from the file path.
+1. **Always read the file first** — before writing anything, read the current content directly from the file path.
 2. **Analyse the existing structure** — identify the formatting conventions used:
    - Does it use `## headings` with prose, or flat `- [ ] checklist` items, or bullet lists, or a table?
    - What is the tone/verbosity of existing entries?
@@ -189,17 +195,17 @@ tags:
    - Append under the relevant existing section heading if it exists
    - Add a new `## <Section>` heading only if the rest of the file also uses `##` headings
    - **Do not duplicate** content already present
-5. Write the updated file back directly (preserving frontmatter).
+5. Write the updated markdown file back directly (preserving frontmatter).
 
 #### Appending to special files (`💡Ideas.md`, `🍽️ Plate.md`)
 
 1. **Read the file first** to understand its structure (see "Updating an existing note" above).
 2. Format the new entry to match the existing style exactly.
-3. Use the CLI append command only if the formatted content is a simple single-line entry:
+3. Use the CLI append command only if the formatted content is a simple single-line entry and direct edit is not simpler:
    ```bash
    obsidian append file="💡Ideas" content="- <new idea>"
    ```
-   For multi-line or structured entries, write the file directly to ensure correct formatting.
+    For multi-line or structured entries, update the markdown file directly to ensure correct formatting.
 
 #### Fallback
 

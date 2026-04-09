@@ -30,6 +30,14 @@ Invoke this skill when the user wants to:
 
 Follow these steps precisely when this skill is invoked:
 
+### Command usage policy
+
+Use Obsidian CLI commands mainly for search efficiency and finding connected notes.
+
+- Prefer `obsidian search` when locating existing meeting notes or related project context.
+- For creating/updating note content, edit markdown files directly at the vault path.
+- Use CLI create/append only when it is clearly faster than direct editing.
+
 ### Step 1 — Gather missing information
 
 **If meeting content was NOT provided in the prompt:**
@@ -51,11 +59,12 @@ Extract the following:
 
 ### Step 3 — Determine create vs. update
 
-List existing meeting notes:
+Search for existing meeting notes and connected context:
 ```bash
-ls "VAULT_ROOT/Work/Vaimo/Meeting notes/"
+obsidian search query="<meeting date> <participant name> <project keyword>"
 ```
-(Replace `VAULT_ROOT` with the actual vault root path.)
+
+Use 1-2 additional focused searches (participant aliases, project code names, alternate date formats) to avoid duplicates and find related notes.
 
 - **If a note with the same date and overlapping participants exists** → update that note (merge new content into the appropriate sections, append new action items).
 - **Otherwise** → create a new note.
@@ -111,14 +120,11 @@ tags:
     - <Action item>
 ```
 
-Use the `obsidian` CLI if available:
-```bash
-obsidian create name="YYYY.MM.DD Title" content="..."
-```
+Create/update the markdown file directly at the vault path.
 
-If the obsidian CLI fails or is unavailable, create the file directly at the vault path.
+If CLI create is used for speed, treat it as a scaffold only and still verify/finalize file content via direct markdown edit.
 
-**For updates:** Read the existing file, merge new sections intelligently. Do not duplicate content that already exists. Append to `### Next Steps` or create it if missing.
+**For updates:** Read the existing markdown file, merge new sections intelligently. Do not duplicate content that already exists. Append to `### Next Steps` or create it if missing.
 
 ### Step 6 — Update TASKS.md
 
@@ -157,4 +163,4 @@ Report:
 - Always write note content in the **same language as the provided content** (Ukrainian or English). YAML tags are always in English.
 - Participant tags use CamelCase with no spaces (e.g. `PavloZamoroka`, `IvanBordiuh`).
 - "Pavlo" in content always refers to Pavlo Zamoroka (vault owner) — no need to ask for clarification.
-- If the obsidian CLI is unavailable, fall back to direct file creation without interrupting the user.
+- If the obsidian CLI is unavailable, continue with direct markdown edits without interrupting the user.
