@@ -2,7 +2,7 @@
 name: review-pr
 description: "Reviews Bitbucket pull requests, summarizes diffs, and produces inline findings artifacts. Use when the user asks to review a PR, inspect PR changes, or run a pull request code review."
 metadata:
-  version: "2.0.0"
+  version: "2.1.0"
   category: "engineering"
 ---
 
@@ -90,7 +90,7 @@ Always ask user to confirm detected key.
 - If detected: ask `I found {ISSUE_KEY}. Correct?`
 - If not detected: ask user to provide Jira issue key, or confirm skipping Jira step.
 
-If user says PR is not related to Jira, skip Step 5 and Step 7 ticket-alignment check.
+If user says PR is not related to Jira, skip Step 5 and Step 9 ticket-alignment check.
 
 ---
 
@@ -109,21 +109,40 @@ PROJECT_ROOT="{PROJECT_ROOT}" npm --prefix ~/.agents/skills/review-pr --workspac
 
 ---
 
-## Step 6 — Load relevant AGENTS.md files
+## Step 6 — Load relevant AGENTS.md files and detect project type
 
 Launch an agent (model: haiku) to return a list of file paths (not their contents) for all relevant `AGENTS.md` files including:
 - The root `AGENTS.md` at `$PROJECT_ROOT/AGENTS.md`
 - Any `AGENTS.md` files in directories containing files modified by the pull request
 
+Then read the root `$PROJECT_ROOT/AGENTS.md` and detect `PROJECT_TYPE` from explicit project identifiers.
+
+For now support only:
+- If AGENTS.md indicates Magento 2 / Adobe Commerce -> `PROJECT_TYPE=magento2`
+- Otherwise -> `PROJECT_TYPE=unknown`
+
 ---
 
-## Step 7 — Summarise the PR
+## Step 7 — Load project intelligence provider
+
+Select an LSP/MCP provider based on `PROJECT_TYPE` and load system context before summarizing/reviewing code.
+
+Current mapping:
+- `magento2` -> use `magento2-lsp-mcp` (`npm install -g @mage-os/magento2-lsp`)
+
+For `magento2`, the summarizer and review agents must call Magento MCP tools for changed PHP/XML areas to validate merged Magento behavior (DI preferences/plugins, event observers, template/layout wiring, config-driven behavior) instead of relying on raw file reading alone.
+
+If `PROJECT_TYPE=unknown`, continue without LSP/MCP enrichment.
+
+---
+
+## Step 8 — Summarise the PR
 
 Launch an agent to view the pull request diff and return a concise summary of the changes.
 
 ---
 
-## Step 8 — Review
+## Step 9 — Review
 
 Launch 2 agents in parallel to independently review the changes. Each agent MUST return issues in this exact structured format — one JSON object per issue:
 
@@ -141,6 +160,8 @@ If the PR is a pure deletion, also apply `deletion-pr-checklist.md`.
 
 If Jira step was not skipped, first launch 1 local agent to compare PR diff with `$PROJECT_ROOT/.agents/artifacts/pr-{PR_NUMBER}-issue-summary.md` and decide if implementation matches ticket scope. Return mismatches in the same issue JSON format (`line` can be `0` when mismatch is not line-specific).
 
+If `PROJECT_TYPE=magento2`, both review agents must use `magento2-lsp-mcp` tool calls as evidence for Magento-specific claims.
+
 Run both agents with distinct focus:
 - **Agent 1 (model: sonnet): code-quality-pragmalist**
 - **Agent 2 (model: sonnet): compliance-checker**
@@ -149,7 +170,7 @@ Merge findings from all launched agents.
 
 ---
 
-## Step 9 — Assemble and save artifacts
+## Step 10 — Assemble and save artifacts
 
 Assume `$PROJECT_ROOT/.agents/artifacts/` already exists. Create it only if artifact write fails due to missing directory.
 
@@ -198,5 +219,7 @@ Display the full review in the terminal.
 - For Bitbucket PR fetch, use `npm --prefix ~/.agents/skills/review-pr --workspace pr-fetch run fetch:pr -- bitbucket {PR_URL}`.
 - For GitHub PR URLs, respond with `not supported yet`.
 - Use `npm --prefix ~/.agents/skills/review-pr --workspace jira-fetch run fetch:jira -- {PR_NUMBER} {ISSUE_KEY}` to fetch and summarize Jira ticket data for the PR.
+- Detect project type from `$PROJECT_ROOT/AGENTS.md` and load the mapped LSP/MCP provider before PR summarization/review.
+- For Magento projects, use `magento2-lsp-mcp` for merged-config/system understanding during review.
 - Create a todo list before starting.
 - When citing AGENTS.md rules, quote the relevant rule text directly.
