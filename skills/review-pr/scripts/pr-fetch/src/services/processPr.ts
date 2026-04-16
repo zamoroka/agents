@@ -7,6 +7,8 @@ import { getDiff, getDiffStat, getPullRequest, getPullRequestComments } from './
 
 const line = '==========================================';
 
+const getDatePrefix = (): string => new Date().toISOString().slice(0, 10);
+
 const parsePrUrl = (provider: string, prUrl: string): ParsedPrUrl => {
   if (provider === 'github') {
     const githubMatch = prUrl.match(/^https?:\/\/github\.com\/[^/]+\/[^/]+\/pull\/(\d+)(?:\/.*)?$/i);
@@ -178,7 +180,8 @@ export const processPr = async ({ provider, prUrl }: { provider: string; prUrl: 
   }
 
   const artifactsDir = join(projectRoot, '.agents', 'artifacts');
-  const diffArtifactPath = join(artifactsDir, `pr-${parsed.prNumber}-diff.patch`);
+  const repoSlug = parsed.repo || 'unknown-repo';
+  const diffArtifactPath = join(artifactsDir, `${getDatePrefix()}-pr-${repoSlug}-${parsed.prNumber}-diff.patch`);
   const patchHeader = buildPatchHeader(pr, parsed);
   const patchContent = `${patchHeader}${diffContent}`;
   try {

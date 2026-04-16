@@ -7,11 +7,15 @@ import { summarizeJiraIssue } from './summarizeJiraIssue.js';
 const buildArtifactContent = ({ prNumber, issueKey, summary }: { prNumber: string; issueKey: string; summary: string }): string =>
   [`# PR ${prNumber} issue summary`, '', `Jira ticket: ${issueKey}`, '', summary, ''].join('\n');
 
+const getDatePrefix = (): string => new Date().toISOString().slice(0, 10);
+
 export const processIssueSummary = async ({
+  repoSlug,
   prNumber,
   issueKey,
   projectRoot,
 }: {
+  repoSlug: string;
   prNumber: string;
   issueKey: string;
   projectRoot: string;
@@ -34,7 +38,7 @@ export const processIssueSummary = async ({
   });
 
   const artifactsDir = join(projectRoot, '.agents', 'artifacts');
-  const outputPath = join(artifactsDir, `pr-${prNumber}-issue-summary.md`);
+  const outputPath = join(artifactsDir, `${getDatePrefix()}-pr-${repoSlug}-${prNumber}-issue-summary.md`);
   const output = buildArtifactContent({ prNumber, issueKey, summary });
 
   try {
