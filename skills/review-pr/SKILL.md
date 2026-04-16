@@ -1,8 +1,8 @@
 ---
 name: review-pr
-description: "Reviews Bitbucket pull requests, summarizes diffs, and produces inline findings artifacts. Use when the user asks to review a PR, inspect PR changes, or run a pull request code review."
+description: "Reviews Bitbucket pull requests, summarizes diffs, and produces a full review artifact. Use when the user asks to review a PR, inspect PR changes, or run a pull request code review."
 metadata:
-  version: "2.1.0"
+  version: "2.1.5"
   category: "engineering"
 ---
 
@@ -15,6 +15,19 @@ Review a pull request. Findings are displayed in the terminal and saved as artif
 - All tools are functional and will work without error. Do not test tools or make exploratory calls. Make sure this is clear to every subagent that is launched.
 - Only call a tool if it is required to complete the task. Every tool call should have a clear purpose.
 
+## Shared runtime fallback (Node 25)
+
+If default Node is older than 18 and a fetch step fails with `fetch is not defined`, use Node 25 wrappers from the workspace directory:
+
+- PR fetch (run in `~/.agents/skills/review-pr/scripts/pr-fetch`):
+  - `PROJECT_ROOT="{PROJECT_ROOT}" npx -y node@25 --loader ts-node/esm src/function.ts bitbucket {PR_URL}`
+- Jira fetch (run in `~/.agents/skills/review-pr/scripts/jira-fetch`):
+  - `PROJECT_ROOT="{PROJECT_ROOT}" npx -y node@25 --loader ts-node/esm src/function.ts {REPO_SLUG} {PR_NUMBER} {ISSUE_KEY}`
+
+Dependency note for fetch steps:
+- Assume dependencies are already installed.
+- Only run `npm install --prefix ~/.agents/skills/review-pr/scripts` if a fetch command fails due to missing modules/dependencies.
+
 ---
 
 ## Step 0 — Ask for PR URL
@@ -22,21 +35,22 @@ Review a pull request. Findings are displayed in the terminal and saved as artif
 Ask the user for the pull request URL.
 
 When provided, validate format and detect provider:
-- Bitbucket PR URL format: `https://bitbucket.org/<workspace>/<repo>/pull-requests/<number>`
-- GitHub PR URL format: `https://github.com/<owner>/<repo>/pull/<number>`
+- Bitbucket PR URL format: `https://bitbucket.org/<workspace>/<repo_slug>/pull-requests/<number>`
+- GitHub PR URL format: `https://github.com/<owner>/<repo_slug>/pull/<number>`
 
 If provider is GitHub: respond with `not supported yet` and stop.
 
 Extract and store:
 - `PR_URL`
 - `PR_PROVIDER` (`bitbucket`)
+- `REPO_SLUG`
 - `PR_NUMBER`
 
 ---
 
 ## Step 1 — Detect project root
 
-Check if the current working directory contains an `AGENTS.md` file.
+Check if the current working directory contains an `AGENTS.md` and file.
 
 - **If yes** → `PROJECT_ROOT` = current working directory.
 - **If no** → Ask the user: *"You don't appear to be inside a project folder. Please provide the absolute path to the project root."* Wait for their response, then set `PROJECT_ROOT` to the provided path. Verify that `AGENTS.md` exists there before continuing.
@@ -59,13 +73,7 @@ For each missing variable, ask the user to provide the value (ask all missing va
 
 Also ensure `.env.local` is listed in `$PROJECT_ROOT/.gitignore`. If it is not, append `.env.local` to the `.gitignore` file.
 
-> **Token note:** `AGENT_CODEREVIEW_BITBUCKET_TOKEN` must be an Atlassian API token (from https://id.atlassian.com/manage-profile/security/api-tokens), not a Bitbucket App Password.
->
-> **Jira token note:** Authentication method depends on Jira hosting type:
-> - **Self-hosted Jira (Server / Data Center):** Generate a PAT from *Profile → Personal Access Tokens*. Leave `AGENT_CODEREVIEW_JIRA_EMAIL` unset — the client will use Bearer auth automatically.
-> - **Jira Cloud:** Use an Atlassian API token from https://id.atlassian.com/manage-profile/security/api-tokens. You must also add `AGENT_CODEREVIEW_JIRA_EMAIL` (your Atlassian account email) to `.env.local` — the client uses Basic auth (`email:token`) for Cloud.
->
-> If you receive a 401 on the Jira fetch step, check which type of token is being used and whether `AGENT_CODEREVIEW_JIRA_EMAIL` is needed.
+For token requirements and Jira/Bitbucket authentication troubleshooting, use `./shared/auth-setup.md`.
 
 ---
 
@@ -74,11 +82,12 @@ Also ensure `.env.local` is listed in `$PROJECT_ROOT/.gitignore`. If it is not, 
 Run the Bitbucket Node module, passing the project root:
 
 ```bash
-npm install --prefix ~/.agents/skills/review-pr
-PROJECT_ROOT="{PROJECT_ROOT}" npm --prefix ~/.agents/skills/review-pr --workspace pr-fetch run fetch:pr -- bitbucket {PR_URL}
+PROJECT_ROOT="{PROJECT_ROOT}" npm --prefix ~/.agents/skills/review-pr/scripts --workspace pr-fetch run fetch:pr -- bitbucket {PR_URL}
 ```
 
-This outputs PR details, comments, changed files, and full diff to stdout, and saves the diff artifact to `$PROJECT_ROOT/.agents/artifacts/pr-{PR_NUMBER}-diff.patch` with Bitbucket metadata in comment lines at the top (title, author, description, and related PR fields).
+If needed, use the shared Node 25 fallback above.
+
+This outputs PR details, comments, changed files, and full diff to stdout, and saves the diff artifact to `$PROJECT_ROOT/.agents/artifacts/YYYY-mm-dd-pr-{REPO_SLUG}-{PR_NUMBER}-diff.patch` with Bitbucket metadata in comment lines at the top (title, author, description, and related PR fields).
 
 ---
 
@@ -98,14 +107,15 @@ If user says PR is not related to Jira, skip Step 5 and Step 9 ticket-alignment 
 
 Run the Jira Node entrypoint with the detected Jira key (for example `SUNNYR-25`). It fetches the ticket, summarizes it with a small OpenAI model, and writes:
 
-- `$PROJECT_ROOT/.agents/artifacts/pr-{PR_NUMBER}-issue-summary.md`
+- `$PROJECT_ROOT/.agents/artifacts/YYYY-mm-dd-pr-{REPO_SLUG}-{PR_NUMBER}-issue-summary.md`
 
 Command:
 
 ```bash
-npm install --prefix ~/.agents/skills/review-pr
-PROJECT_ROOT="{PROJECT_ROOT}" npm --prefix ~/.agents/skills/review-pr --workspace jira-fetch run fetch:jira -- {PR_NUMBER} {ISSUE_KEY}
+PROJECT_ROOT="{PROJECT_ROOT}" npm --prefix ~/.agents/skills/review-pr/scripts --workspace jira-fetch run fetch:jira -- {REPO_SLUG} {PR_NUMBER} {ISSUE_KEY}
 ```
+
+If needed, use the shared Node 25 fallback above.
 
 ---
 
@@ -128,9 +138,14 @@ For now support only:
 Select an LSP/MCP provider based on `PROJECT_TYPE` and load system context before summarizing/reviewing code.
 
 Current mapping:
-- `magento2` -> use `magento2-lsp-mcp` (`npm install -g @mage-os/magento2-lsp`)
+- `magento2` -> use `magento2-lsp-mcp`
+
+Environment note:
+- `magento2-lsp-mcp` is expected to be preinstalled in this environment; do not reinstall it during normal review flow.
 
 For `magento2`, the summarizer and review agents must call Magento MCP tools for changed PHP/XML areas to validate merged Magento behavior (DI preferences/plugins, event observers, template/layout wiring, config-driven behavior) instead of relying on raw file reading alone.
+
+See `./shared/magento2-lsp-mcp-usage.md` for the expected evidence workflow.
 
 If `PROJECT_TYPE=unknown`, continue without LSP/MCP enrichment.
 
@@ -144,7 +159,7 @@ Launch an agent to view the pull request diff and return a concise summary of th
 
 ## Step 9 — Review
 
-Launch 2 agents in parallel to independently review the changes. Each agent MUST return issues in this exact structured format — one JSON object per issue:
+Launch 3 agents with ordering constraints. Each agent that returns issues MUST use this exact structured format — one JSON object per issue:
 
 ```
 {"path": "app/code/Vaimo/Module/File.php", "line": 42, "severity": "warning", "description": "Description of the issue and suggested fix"}
@@ -155,18 +170,36 @@ Launch 2 agents in parallel to independently review the changes. Each agent MUST
 - `severity` — one of: `error`, `warning`, `suggestion`
 - `description` — what the issue is, why it was flagged, and how to fix it
 
-Before review, load and apply rules from `review-guardrails.md`.
-If the PR is a pure deletion, also apply `deletion-pr-checklist.md`.
+Before review, load and apply rules from `./shared/review-guardrails.md`.
+If the PR is a pure deletion, also apply `./shared/deletion-pr-checklist.md`.
 
-If Jira step was not skipped, first launch 1 local agent to compare PR diff with `$PROJECT_ROOT/.agents/artifacts/pr-{PR_NUMBER}-issue-summary.md` and decide if implementation matches ticket scope. Return mismatches in the same issue JSON format (`line` can be `0` when mismatch is not line-specific).
+If Jira step was not skipped, run this sequence:
 
-If `PROJECT_TYPE=magento2`, both review agents must use `magento2-lsp-mcp` tool calls as evidence for Magento-specific claims.
+1. Run **Agent 1 (reasoning: medium): code-quality-checker** for code-review findings. 
+   - This agent can work in parallel with others.
+   - Checks code quality of the PR diff based on project specifications and rules as if the diff is already applied to the codebase.
+   - Focus on correctness, runtime risk, logic defects, API misuse, and missing edge-case handling.
+   - Flag any potential security concerns with severity `error` and detailed explanation.
 
-Run both agents with distinct focus:
-- **Agent 1 (model: sonnet): code-quality-pragmalist**
-- **Agent 2 (model: sonnet): compliance-checker**
+2. Do not wait for **Agent 1** output and launch **Agent 2 (reasoning: medium): default-functionality-checker**.
+   - Goal: check whether the Jira request can be covered by functionality that already exists in the project.
+   - Strict constraint: this agent must not inspect or use the PR diff.
+   - Inputs allowed: project source code/context, AGENTS.md guidance, and `$PROJECT_ROOT/.agents/artifacts/YYYY-mm-dd-pr-{REPO_SLUG}-{PR_NUMBER}-issue-summary.md`.
+   - Output behavior:
+     - If existing functionality can cover the Jira request, propose using default/existing functionality.
+     - If not, provide an implementation plan.
+   - Artifact update rule:
+     - Do not edit or rewrite existing sections in the issue summary file.
+     - Append one new block at the end of the file titled exactly `## Agent proposal implementation`.
+     - The block must contain either:
+       - `Decision: Use existing/default functionality` + concrete proposal details, or
+       - `Decision: New implementation required` + concise implementation plan.
 
-Merge findings from all launched agents.
+3. After **Agent 2** finishes and the issue summary append is complete, launch the **Agent 3 (reasoning: medium): ticket-alignment** agent to compare PR diff with the updated issue summary file and return mismatches.
+    - Agent checks if the PR implementation aligns with the Jira issue requirements and acceptance criteria as summarized in the issue summary artifact, including any updates from Agent 2.
+    - For any misalignment, return an issue with severity `warning` and description explaining the mismatch and what would be needed to align the PR with the Jira issue.
+
+If `PROJECT_TYPE=magento2`, all review agents that make Magento-specific claims must use `magento2-lsp-mcp` tool calls as evidence.
 
 ---
 
@@ -174,52 +207,38 @@ Merge findings from all launched agents.
 
 Assume `$PROJECT_ROOT/.agents/artifacts/` already exists. Create it only if artifact write fails due to missing directory.
 
-Save two files:
+Merge findings from all launched agents into a single review output, organized by file and line number when applicable. For each finding, include severity, path, line, impact, and suggested fix. Add concrete implementation suggestions and code snippets where useful.
 
-**a. Summary** → `$PROJECT_ROOT/.agents/artifacts/pr-review-{PR_NUMBER}.md`
+Save output to one file:
 
-Format:
-```
-{If no issues: "✅ No issues found"}
-{If issues: "⚠️ {N} issue(s) found — see inline comments"}
+**Review report** → `$PROJECT_ROOT/.agents/artifacts/YYYY-mm-dd-pr-{REPO_SLUG}-{PR_NUMBER}-review.md`
 
-🤖 *Reviewed by Agent ({MODEL_ID})*
-```
+Report format:
 
-**b. Inline comments** → `$PROJECT_ROOT/.agents/artifacts/pr-review-{PR_NUMBER}-inline.json`
+- If no issues: start with `✅ No issues found`
+- If issues exist: start with `⚠️ {N} issue(s) found`
+- Include a concise PR summary
+- Include all findings directly in the same file, organized by file and line number when applicable.
+- For each finding include: severity, path, line (`0` if non-line-specific), impact, and suggested fix
+- Add concrete implementation suggestions and code snippets where useful
 
-Format:
-```json
-[
-  {
-    "path": "app/code/Vaimo/Module/File.php",
-    "line": 42,
-    "content": "**warning** — Description of the issue and suggested fix\n\n🤖 *Reviewed by Agent ({MODEL_ID})*"
-  }
-]
-```
-
-Only include issues where `line > 0`. Format each `content` field as: `**{severity}** — {description}\n\n🤖 *Reviewed by Agent ({MODEL_ID})*`.
-
-If no issues were found, write an empty array `[]` to the inline JSON file.
-
-Display the full review in the terminal.
+Do not display the full review in the terminal, just add path to the saved artifact and a summary line with the number of issues found.
 
 ---
 
+## Naming convention
+
+Use this naming convention for every artifact file:
+
+`<YYYY>-<mm>-<dd>-pr-<repo_slug>-<number>-<artifact_type>`
+
+- `repo_slug` comes from PR URL repo segment (for example `project_sunny-eu` from `https://bitbucket.org/vaimo/project_sunny-eu/pull-requests/726/`)
+- `number` comes from PR URL number segment (for example `726`)
+- `artifact_type` examples: `diff`, `issue-summary`, `review`
+- 
 ## Additional references
 
-- `review-guardrails.md` — behavior-claim evidence rule, reviewer scopes, and false-positive filters
-- `deletion-pr-checklist.md` — extra checks for pure-deletion PRs
-
----
-
-## Notes
-
-- For Bitbucket PR fetch, use `npm --prefix ~/.agents/skills/review-pr --workspace pr-fetch run fetch:pr -- bitbucket {PR_URL}`.
-- For GitHub PR URLs, respond with `not supported yet`.
-- Use `npm --prefix ~/.agents/skills/review-pr --workspace jira-fetch run fetch:jira -- {PR_NUMBER} {ISSUE_KEY}` to fetch and summarize Jira ticket data for the PR.
-- Detect project type from `$PROJECT_ROOT/AGENTS.md` and load the mapped LSP/MCP provider before PR summarization/review.
-- For Magento projects, use `magento2-lsp-mcp` for merged-config/system understanding during review.
-- Create a todo list before starting.
-- When citing AGENTS.md rules, quote the relevant rule text directly.
+- `./shared/auth-setup.md` — Bitbucket/Jira token requirements and auth troubleshooting
+- `./shared/review-guardrails.md` — behavior-claim evidence rule, reviewer scopes, and false-positive filters
+- `./shared/deletion-pr-checklist.md` — extra checks for pure-deletion PRs
+- `./shared/magento2-lsp-mcp-usage.md` — Magento MCP usage and evidence expectations

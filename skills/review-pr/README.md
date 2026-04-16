@@ -29,5 +29,29 @@
 ## Outputs
 
 - PR review artifacts in `$PROJECT_ROOT/.agents/artifacts/`.
-- PR diff artifact `pr-<pr-no>-diff.patch` in `$PROJECT_ROOT/.agents/artifacts/`, including PR metadata in top comment lines (title, author, description, etc.).
-- Jira summary artifact `pr-<pr-no>-issue-summary.md` when Jira step is used.
+
+## Runtime notes
+
+- `pr-fetch` and `jira-fetch` require a Node runtime with global `fetch` support (Node 18+).
+- If the local default Node is older (for example Node 17) and commands fail with `fetch is not defined`, run both entrypoints with Node 25:
+  - `PROJECT_ROOT="{PROJECT_ROOT}" npx -y node@25 --loader ts-node/esm src/function.ts bitbucket {PR_URL}` from `~/.agents/skills/review-pr/scripts/pr-fetch`
+  - `PROJECT_ROOT="{PROJECT_ROOT}" npx -y node@25 --loader ts-node/esm src/function.ts {REPO_SLUG} {PR_NUMBER} {ISSUE_KEY}` from `~/.agents/skills/review-pr/scripts/jira-fetch`
+- `magento2-lsp-mcp` is expected to be preinstalled in this environment; skip reinstall in standard review runs.
+
+### Artifact naming convention
+
+- Format: `<YYYY>-<mm>-<dd>-pr-<repo_slug>-<number>-<artifact_type>`
+- `repo_slug` is extracted from PR URL repo segment (example: `project_sunny-eu` from `https://bitbucket.org/vaimo/project_sunny-eu/pull-requests/726/`)
+- `number` is extracted from PR URL PR number segment (example: `726`)
+- `artifact_type` examples: `diff`, `issue-summary`, `review`
+
+Examples in `$PROJECT_ROOT/.agents/artifacts/`:
+- `YYYY-mm-dd-pr-<repo_slug>-<number>-diff.patch`
+- `YYYY-mm-dd-pr-<repo_slug>-<number>-issue-summary.md`
+- `YYYY-mm-dd-pr-<repo_slug>-<number>-review.md`
+
+### Review artifact content
+
+- Put the complete review into `-review.md`.
+- Include findings, suggested fixes, and optional code snippets in the same file.
+- Do not create a separate `-review-inline.json` artifact.
