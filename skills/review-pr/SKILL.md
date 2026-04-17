@@ -207,7 +207,7 @@ If `PROJECT_TYPE=magento2`, all review agents that make Magento-specific claims 
 
 Assume `$PROJECT_ROOT/.agents/artifacts/` already exists. Create it only if artifact write fails due to missing directory.
 
-Merge findings from all launched agents into a single review output, organized by file and line number when applicable. For each finding, include severity, path, line, impact, and suggested fix. Add concrete implementation suggestions and code snippets where useful.
+Merge findings from all launched agents into a single review output, organized by file and line number when applicable. For each finding, include severity, impact, and suggested fix. Add concrete implementation suggestions and code snippets where useful.
 
 Save output to one file:
 
@@ -218,8 +218,22 @@ Report format:
 - If no issues: start with `✅ No issues found`
 - If issues exist: start with `⚠️ {N} issue(s) found`
 - Include a concise PR summary
-- Include all findings directly in the same file, organized by file and line number when applicable.
-- For each finding include: severity, path, line (`0` if non-line-specific), impact, and suggested fix
+- Group results by file (one section per file), not by finding type.
+- Inside each file section, list that file's findings ordered by line number when applicable.
+- For each finding, render location as:
+
+```md
+In `app/code/Vaimo/SunnySalesforceLivechat/view/frontend/layout/default.xml:10`
+```
+
+- Do not render separate `Path:` / `Line:` labels in the review markdown.
+- If `line=0`, render location as `In \`path/to/file:0\`` and explain in impact/fix that it is a file-level issue.
+- Directly under the location line, include a fenced code block with a short relevant snippet from the PR diff (the related hunk/context).
+- For each finding include: severity, impact, and suggested fix
+- Render severity labels with emoji in the markdown report:
+  - `error` -> `❌ Error`
+  - `warning` -> `⚠️ Warning`
+  - `suggestion` -> `💡 Suggestion`
 - Add concrete implementation suggestions and code snippets where useful
 
 Do not display the full review in the terminal, just add path to the saved artifact and a summary line with the number of issues found.
