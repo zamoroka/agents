@@ -12,15 +12,17 @@ const server = new McpServer({
   version: '1.0.0',
 });
 
-server.tool(
+server.registerTool(
   'fetch_jira_issue_details',
-  'Fetch Jira issue details by issue key.',
   {
-    issueKey: z.string().min(1),
-    jiraBaseUrl: z.string().url().optional(),
-    jiraApiToken: z.string().min(1).optional(),
-    jiraEmail: z.string().email().optional(),
-    jiraAuthType: z.enum(['auto', 'bearer', 'basic']).optional(),
+    description: 'Fetch Jira issue details by issue key.',
+    inputSchema: {
+      issueKey: z.string().min(1),
+      jiraBaseUrl: z.string().url().optional(),
+      jiraApiToken: z.string().min(1).optional(),
+      jiraEmail: z.string().email().optional(),
+      jiraAuthType: z.enum(['auto', 'bearer', 'basic']).optional(),
+    },
   },
   async ({ issueKey, jiraBaseUrl, jiraApiToken, jiraEmail, jiraAuthType }) => {
     const config = await getConfig({ jiraBaseUrl, jiraApiToken, jiraEmail, jiraAuthType });
@@ -43,17 +45,19 @@ server.tool(
   },
 );
 
-server.tool(
+server.registerTool(
   'fetch_jira_issue_ai_summary',
-  'Fetch Jira issue details and return an AI markdown summary.',
   {
-    issueKey: z.string().min(1),
-    jiraBaseUrl: z.string().url().optional(),
-    jiraApiToken: z.string().min(1).optional(),
-    jiraEmail: z.string().email().optional(),
-    jiraAuthType: z.enum(['auto', 'bearer', 'basic']).optional(),
-    openaiApiKey: z.string().min(1).optional(),
-    openaiModel: z.string().min(1).optional(),
+    description: 'Fetch Jira issue details and return an AI markdown summary.',
+    inputSchema: {
+      issueKey: z.string().min(1),
+      jiraBaseUrl: z.string().url().optional(),
+      jiraApiToken: z.string().min(1).optional(),
+      jiraEmail: z.string().email().optional(),
+      jiraAuthType: z.enum(['auto', 'bearer', 'basic']).optional(),
+      openaiApiKey: z.string().min(1).optional(),
+      openaiModel: z.string().min(1).optional(),
+    },
   },
   async ({ issueKey, jiraBaseUrl, jiraApiToken, jiraEmail, jiraAuthType, openaiApiKey, openaiModel }) => {
     const config = await getConfig({
