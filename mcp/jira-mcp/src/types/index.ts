@@ -46,3 +46,43 @@ export type JiraIssue = {
     }>;
   };
 };
+
+export type JiraUser = {
+  accountId?: string;
+  displayName?: string;
+  emailAddress?: string;
+};
+
+export type JiraWorklog = {
+  id?: string;
+  started?: string;
+  timeSpentSeconds?: number;
+  comment?: unknown;
+  author?: JiraUser;
+};
+
+export type JiraIssueSearchItem = {
+  id?: string;
+  key?: string;
+  fields?: {
+    summary?: string;
+    project?: {
+      key?: string;
+      name?: string;
+    };
+  };
+};
+
+export type JiraSearchResult = {
+  startAt?: number;
+  maxResults?: number;
+  total?: number;
+  issues?: JiraIssueSearchItem[];
+};
+
+export type JiraIssueWorklogPage = {
+  startAt?: number;
+  maxResults?: number;
+  total?: number;
+  worklogs?: JiraWorklog[];
+};

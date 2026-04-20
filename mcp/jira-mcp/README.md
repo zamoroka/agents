@@ -32,6 +32,38 @@ Optional overrides (override `.env` values when provided):
 Response:
 - JSON string with full Jira issue payload from Jira REST API.
 
+### `fetch_jira_my_timelogs`
+
+Fetches current user's Jira worklogs for a rolling period and returns a grouped summary by project and issue.
+
+Input:
+
+```json
+{
+  "days": 30,
+  "jiraBaseUrl": "https://jira.example.com",
+  "jiraApiToken": "optional-override-token",
+  "jiraEmail": "optional-user@example.com",
+  "jiraAuthType": "auto|bearer|basic"
+}
+```
+
+Required input:
+- none
+
+Optional overrides:
+- `days` (default `30`, range `1..365`)
+- Jira overrides: `jiraBaseUrl`, `jiraApiToken`, `jiraEmail`, `jiraAuthType`
+
+Response:
+- JSON string containing:
+  - `period` (`from`, `to`, `days`)
+  - `author`
+  - `totalTimeSeconds` and `totalTime`
+  - `projects[]` with per-project and per-issue totals
+  - `details[]` with each worklog item and short description of what was done
+  - `markdownSummary` ready for direct user-facing reporting
+
 ### `fetch_jira_issue_ai_summary`
 
 Fetches Jira issue details first, then generates a markdown summary via LLM.
@@ -97,6 +129,32 @@ From `mcp/jira-mcp`:
 ```bash
 npm run start
 ```
+
+## MCP client config example
+
+Use a JSONC MCP config (for example in `~/.mcp.json`) and add this server under `servers`:
+
+```jsonc
+{
+  "servers": {
+    "jira-mcp": {
+      "type": "stdio",
+      "command": "npm",
+      "args": ["run", "start", "--prefix", "/Users/zamoroka_pavlo/.agents/mcp/jira-mcp"],
+      "env": {
+        "JIRA_URL": "https://jira.example.com",
+        "JIRA_TOKEN": "your_jira_token",
+        "JIRA_EMAIL": "user@example.com",
+        "JIRA_AUTH_TYPE": "auto",
+        "OPENAI_API_KEY": "your_openai_api_key",
+        "JIRA_SUMMARY_OPENAI_MODEL": "gpt-5.4-nano"
+      }
+    }
+  }
+}
+```
+
+If you already use `mcp/jira-mcp/.env`, you can keep `env` empty or omit values that are already in that file.
 
 ## Notes for agent workflows
 

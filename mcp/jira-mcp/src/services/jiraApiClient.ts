@@ -1,6 +1,6 @@
 import { request as httpRequest } from 'node:http';
 import { request as httpsRequest } from 'node:https';
-import type { JiraAuthType, JiraIssue } from '../types/index.js';
+import type { JiraAuthType, JiraIssue, JiraIssueWorklogPage, JiraSearchResult, JiraUser } from '../types/index.js';
 
 const normalizeBaseUrl = (value: string): string => value.replace(/\/$/, '');
 
@@ -25,7 +25,18 @@ type GetJiraIssueInput = {
   jiraAuthType: JiraAuthType;
 };
 
-const fetchJson = async ({
+type JiraAuthInput = {
+  token: string;
+  email: string;
+  jiraAuthType: JiraAuthType;
+};
+
+type JiraPaginatedInput = {
+  startAt?: number;
+  maxResults?: number;
+};
+
+const fetchJson = async <T>({
   url,
   headers,
   redirectCount = 0,
@@ -33,14 +44,14 @@ const fetchJson = async ({
   url: URL;
   headers: Record<string, string>;
   redirectCount?: number;
-}): Promise<JiraIssue> => {
+}): Promise<T> => {
   if (redirectCount > 5) {
     throw new Error('Jira issue fetch failed: too many redirects');
   }
 
   const requestImpl = url.protocol === 'https:' ? httpsRequest : httpRequest;
 
-  return new Promise<JiraIssue>((resolve, reject) => {
+  return new Promise<T>((resolve, reject) => {
     const req = requestImpl(
       url,
       {
@@ -64,7 +75,7 @@ const fetchJson = async ({
             }
 
             const redirectedUrl = new URL(location, url);
-            fetchJson({ url: redirectedUrl, headers, redirectCount: redirectCount + 1 }).then(resolve).catch(reject);
+            fetchJson<T>({ url: redirectedUrl, headers, redirectCount: redirectCount + 1 }).then(resolve).catch(reject);
             return;
           }
 
@@ -74,7 +85,7 @@ const fetchJson = async ({
           }
 
           try {
-            resolve(JSON.parse(body) as JiraIssue);
+            resolve(JSON.parse(body) as T);
           } catch (error) {
             reject(new Error(`Failed to parse Jira response JSON: ${error instanceof Error ? error.message : String(error)}`));
           }
@@ -90,14 +101,13 @@ const fetchJson = async ({
   });
 };
 
-export const getJiraIssue = async ({ baseUrl, issueKey, token, email, jiraAuthType }: GetJiraIssueInput): Promise<JiraIssue> => {
-  const url = new URL(`${normalizeBaseUrl(baseUrl)}/rest/api/2/issue/${encodeURIComponent(issueKey)}?expand=renderedFields`);
+const fetchJiraWithAuth = async <T>({ url, token, email, jiraAuthType }: { url: URL } & JiraAuthInput): Promise<T> => {
   const baseHeaders = {
     Accept: 'application/json',
   };
 
   if (jiraAuthType === 'bearer') {
-    return fetchJson({
+    return fetchJson<T>({
       url,
       headers: {
         ...baseHeaders,
@@ -111,7 +121,7 @@ export const getJiraIssue = async ({ baseUrl, issueKey, token, email, jiraAuthTy
       throw new Error('jiraAuthType is basic but jiraEmail is not set. Set JIRA_EMAIL in .env or pass jiraEmail to the tool call.');
     }
 
-    return fetchJson({
+    return fetchJson<T>({
       url,
       headers: {
         ...baseHeaders,
@@ -121,7 +131,7 @@ export const getJiraIssue = async ({ baseUrl, issueKey, token, email, jiraAuthTy
   }
 
   try {
-    return await fetchJson({
+    return await fetchJson<T>({
       url,
       headers: {
         ...baseHeaders,
@@ -134,11 +144,73 @@ export const getJiraIssue = async ({ baseUrl, issueKey, token, email, jiraAuthTy
     }
   }
 
-  return fetchJson({
+  return fetchJson<T>({
     url,
     headers: {
       ...baseHeaders,
       Authorization: getBasicAuthHeader(email, token),
     },
   });
+};
+
+export const getJiraIssue = async ({ baseUrl, issueKey, token, email, jiraAuthType }: GetJiraIssueInput): Promise<JiraIssue> => {
+  const url = new URL(`${normalizeBaseUrl(baseUrl)}/rest/api/2/issue/${encodeURIComponent(issueKey)}?expand=renderedFields`);
+  return fetchJiraWithAuth<JiraIssue>({ url, token, email, jiraAuthType });
+};
+
+export const getCurrentJiraUser = async ({
+  baseUrl,
+  token,
+  email,
+  jiraAuthType,
+}: {
+  baseUrl: string;
+} & JiraAuthInput): Promise<JiraUser> => {
+  const url = new URL(`${normalizeBaseUrl(baseUrl)}/rest/api/2/myself`);
+  return fetchJiraWithAuth<JiraUser>({ url, token, email, jiraAuthType });
+};
+
+export const searchJiraIssues = async ({
+  baseUrl,
+  token,
+  email,
+  jiraAuthType,
+  jql,
+  fields,
+  startAt,
+  maxResults,
+}: {
+  baseUrl: string;
+  jql: string;
+  fields?: string[];
+} & JiraAuthInput & JiraPaginatedInput): Promise<JiraSearchResult> => {
+  const url = new URL(`${normalizeBaseUrl(baseUrl)}/rest/api/2/search`);
+  url.searchParams.set('jql', jql);
+  url.searchParams.set('maxResults', String(maxResults ?? 100));
+  url.searchParams.set('startAt', String(startAt ?? 0));
+
+  if (fields && fields.length > 0) {
+    url.searchParams.set('fields', fields.join(','));
+  }
+
+  return fetchJiraWithAuth<JiraSearchResult>({ url, token, email, jiraAuthType });
+};
+
+export const getJiraIssueWorklogs = async ({
+  baseUrl,
+  token,
+  email,
+  jiraAuthType,
+  issueKey,
+  startAt,
+  maxResults,
+}: {
+  baseUrl: string;
+  issueKey: string;
+} & JiraAuthInput & JiraPaginatedInput): Promise<JiraIssueWorklogPage> => {
+  const url = new URL(`${normalizeBaseUrl(baseUrl)}/rest/api/2/issue/${encodeURIComponent(issueKey)}/worklog`);
+  url.searchParams.set('maxResults', String(maxResults ?? 100));
+  url.searchParams.set('startAt', String(startAt ?? 0));
+
+  return fetchJiraWithAuth<JiraIssueWorklogPage>({ url, token, email, jiraAuthType });
 };

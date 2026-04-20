@@ -5,6 +5,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import { getConfig, logger } from './common/index.js';
 import { getJiraIssue } from './services/jiraApiClient.js';
+import { processMyTimelogs } from './services/processMyTimelogs.js';
 import { processIssueSummary } from './services/processIssueSummary.js';
 
 const server = new McpServer({
@@ -39,6 +40,39 @@ server.registerTool(
         {
           type: 'text',
           text: JSON.stringify(issue, null, 2),
+        },
+      ],
+    };
+  },
+);
+
+server.registerTool(
+  'fetch_jira_my_timelogs',
+  {
+    description: 'Fetch and summarize current user Jira timelogs for the last N days.',
+    inputSchema: {
+      days: z.number().int().min(1).max(365).optional(),
+      jiraBaseUrl: z.string().url().optional(),
+      jiraApiToken: z.string().min(1).optional(),
+      jiraEmail: z.string().email().optional(),
+      jiraAuthType: z.enum(['auto', 'bearer', 'basic']).optional(),
+    },
+  },
+  async ({ days, jiraBaseUrl, jiraApiToken, jiraEmail, jiraAuthType }) => {
+    const config = await getConfig({ jiraBaseUrl, jiraApiToken, jiraEmail, jiraAuthType });
+    const report = await processMyTimelogs({
+      jiraBaseUrl: config.jiraBaseUrl,
+      jiraApiToken: config.jiraApiToken,
+      jiraEmail: config.jiraEmail,
+      jiraAuthType: config.jiraAuthType,
+      days: days ?? 30,
+    });
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(report, null, 2),
         },
       ],
     };
