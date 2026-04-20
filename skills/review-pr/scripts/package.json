@@ -2,7 +2,6 @@
   "name": "revew-pr-skill",
   "private": true,
   "workspaces": [
-    "jira-fetch",
     "pr-fetch"
   ]
 }

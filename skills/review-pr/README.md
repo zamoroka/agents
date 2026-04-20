@@ -11,7 +11,7 @@
 - Agent determines Jira issue key from PR data.
 - Agent always asks user to confirm detected Jira issue key.
 - If key is not in PR details, agent asks user to provide one or confirm skipping Jira step when PR is not Jira-related.
-- If Jira issue key is provided, agent checks `.env.local` for required API vars and runs `jira-fetch` to generate OpenAI summary.
+- If Jira issue key is provided, agent checks `.env.local` for required API vars and calls `jira-mcp` tool `get_jira_issue_details` to generate OpenAI summary.
 - Agent checks whether Jira issue scope is aligned with PR implementation, then performs regular PR review (code quality, standards, etc.).
 - Agent saves PR review artifact(s) at the end.
 
@@ -32,10 +32,10 @@
 
 ## Runtime notes
 
-- `pr-fetch` and `jira-fetch` require a Node runtime with global `fetch` support (Node 18+).
+- `pr-fetch` and `jira-mcp` require a Node runtime with global `fetch` support (Node 18+).
 - If the local default Node is older (for example Node 17) and commands fail with `fetch is not defined`, run both entrypoints with Node 25:
   - `PROJECT_ROOT="{PROJECT_ROOT}" npx -y node@25 --loader ts-node/esm src/function.ts bitbucket {PR_URL}` from `~/.agents/skills/review-pr/scripts/pr-fetch`
-  - `PROJECT_ROOT="{PROJECT_ROOT}" npx -y node@25 --loader ts-node/esm src/function.ts {REPO_SLUG} {PR_NUMBER} {ISSUE_KEY}` from `~/.agents/skills/review-pr/scripts/jira-fetch`
+  - `PROJECT_ROOT="{PROJECT_ROOT}" npx -y node@25 --loader ts-node/esm src/function.ts` from `~/.agents/mcp/jira-mcp`
 - `magento2-lsp-mcp` is expected to be preinstalled in this environment; skip reinstall in standard review runs.
 
 ### Artifact naming convention

@@ -21,12 +21,13 @@ If default Node is older than 18 and a fetch step fails with `fetch is not defin
 
 - PR fetch (run in `~/.agents/skills/review-pr/scripts/pr-fetch`):
   - `PROJECT_ROOT="{PROJECT_ROOT}" npx -y node@25 --loader ts-node/esm src/function.ts bitbucket {PR_URL}`
-- Jira fetch (run in `~/.agents/skills/review-pr/scripts/jira-fetch`):
-  - `PROJECT_ROOT="{PROJECT_ROOT}" npx -y node@25 --loader ts-node/esm src/function.ts {REPO_SLUG} {PR_NUMBER} {ISSUE_KEY}`
+- Jira MCP server (run in `~/.agents/mcp/jira-mcp`):
+  - `PROJECT_ROOT="{PROJECT_ROOT}" npx -y node@25 --loader ts-node/esm src/function.ts`
 
 Dependency note for fetch steps:
 - Assume dependencies are already installed.
 - Only run `npm install --prefix ~/.agents/skills/review-pr/scripts` if a fetch command fails due to missing modules/dependencies.
+- Only run `npm install --prefix ~/.agents/mcp/jira-mcp` if Jira MCP startup/tool calls fail due to missing modules/dependencies.
 
 ---
 
@@ -105,17 +106,17 @@ If user says PR is not related to Jira, skip Step 5 and Step 9 ticket-alignment 
 
 ## Step 5 — Gather and summarize Jira ticket
 
-Run the Jira Node entrypoint with the detected Jira key (for example `SUNNYR-25`). It fetches the ticket, summarizes it with a small OpenAI model, and writes:
+Call the `jira-mcp` MCP tool `get_jira_issue_details` with the detected Jira key (for example `SUNNYR-25`). It fetches the ticket, summarizes it with a small OpenAI model, and writes:
 
 - `$PROJECT_ROOT/.agents/artifacts/YYYY-mm-dd-pr-{REPO_SLUG}-{PR_NUMBER}-issue-summary.md`
 
-Command:
+Tool input:
 
-```bash
-PROJECT_ROOT="{PROJECT_ROOT}" npm --prefix ~/.agents/skills/review-pr/scripts --workspace jira-fetch run fetch:jira -- {REPO_SLUG} {PR_NUMBER} {ISSUE_KEY}
+```json
+{"repoSlug":"{REPO_SLUG}","prNumber":"{PR_NUMBER}","issueKey":"{ISSUE_KEY}"}
 ```
 
-If needed, use the shared Node 25 fallback above.
+If needed, use the shared Node 25 fallback above to start `jira-mcp`.
 
 ---
 

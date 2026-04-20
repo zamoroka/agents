@@ -14,7 +14,7 @@ const formatMeta = (meta: Meta): string => {
 
 export const logger = {
   info(message: string, meta?: Meta): void {
-    process.stdout.write(`[revew-pr] ${message}${formatMeta(meta)}\n`);
+    process.stderr.write(`[revew-pr] ${message}${formatMeta(meta)}\n`);
   },
   error(message: string, meta?: Meta): void {
     process.stderr.write(`[revew-pr] ${message}${formatMeta(meta)}\n`);
