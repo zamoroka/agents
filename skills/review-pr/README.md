@@ -11,7 +11,7 @@
 - Agent determines Jira issue key from PR data.
 - Agent always asks user to confirm detected Jira issue key.
 - If key is not in PR details, agent asks user to provide one or confirm skipping Jira step when PR is not Jira-related.
-- If Jira issue key is provided, agent checks `.env.local` for required API vars and calls `jira-mcp` tool `get_jira_issue_details` to generate OpenAI summary.
+- If Jira issue key is provided, agent checks `.env.local` for required API vars, calls `jira-mcp` tool `fetch_jira_issue_ai_summary`, and saves the returned markdown summary to the issue-summary artifact file.
 - Agent checks whether Jira issue scope is aligned with PR implementation, then performs regular PR review (code quality, standards, etc.).
 - Agent saves PR review artifact(s) at the end.
 
@@ -19,7 +19,8 @@
 
 - PR URL from user.
 - Optional Jira issue key confirmation from user.
-- Environment values in `$PROJECT_ROOT/.env.local` when Jira summary step is used.
+- Environment values in `$PROJECT_ROOT/.env.local` for Bitbucket fetch.
+- Jira/LLM values in `~/.agents/mcp/jira-mcp/.env` (or passed as MCP tool arguments) when Jira summary step is used.
 
 ## Token setup tip
 

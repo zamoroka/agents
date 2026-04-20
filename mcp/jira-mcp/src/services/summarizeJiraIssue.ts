@@ -2,8 +2,7 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { generateText } from 'ai';
 import type { JiraIssue } from '../types/index.js';
 
-const systemPrompt =
-  'You summarize Jira tickets for pull request review. Be precise, concise, and avoid guessing.';
+const systemPrompt = 'You summarize Jira tickets for pull request review. Be precise, concise, and avoid guessing.';
 
 const buildPayload = (jiraIssue: JiraIssue) => ({
   key: jiraIssue.key,

@@ -3,7 +3,8 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import { getProjectRoot, logger } from './common/index.js';
+import { getConfig, logger } from './common/index.js';
+import { getJiraIssue } from './services/jiraApiClient.js';
 import { processIssueSummary } from './services/processIssueSummary.js';
 
 const server = new McpServer({
@@ -12,16 +13,71 @@ const server = new McpServer({
 });
 
 server.tool(
-  'get_jira_issue_details',
-  'Fetches Jira issue details, writes an issue summary artifact, and returns summary location.',
+  'fetch_jira_issue_details',
+  'Fetch Jira issue details by issue key.',
   {
-    repoSlug: z.string().min(1),
-    prNumber: z.string().min(1),
     issueKey: z.string().min(1),
+    jiraBaseUrl: z.string().url().optional(),
+    jiraApiToken: z.string().min(1).optional(),
+    jiraEmail: z.string().email().optional(),
+    jiraAuthType: z.enum(['auto', 'bearer', 'basic']).optional(),
   },
-  async ({ repoSlug, prNumber, issueKey }) => {
-    const projectRoot = getProjectRoot();
-    const result = await processIssueSummary({ repoSlug, prNumber, issueKey, projectRoot });
+  async ({ issueKey, jiraBaseUrl, jiraApiToken, jiraEmail, jiraAuthType }) => {
+    const config = await getConfig({ jiraBaseUrl, jiraApiToken, jiraEmail, jiraAuthType });
+    const issue = await getJiraIssue({
+      baseUrl: config.jiraBaseUrl,
+      issueKey,
+      token: config.jiraApiToken,
+      email: config.jiraEmail,
+      jiraAuthType: config.jiraAuthType,
+    });
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(issue, null, 2),
+        },
+      ],
+    };
+  },
+);
+
+server.tool(
+  'fetch_jira_issue_ai_summary',
+  'Fetch Jira issue details and return an AI markdown summary.',
+  {
+    issueKey: z.string().min(1),
+    jiraBaseUrl: z.string().url().optional(),
+    jiraApiToken: z.string().min(1).optional(),
+    jiraEmail: z.string().email().optional(),
+    jiraAuthType: z.enum(['auto', 'bearer', 'basic']).optional(),
+    openaiApiKey: z.string().min(1).optional(),
+    openaiModel: z.string().min(1).optional(),
+  },
+  async ({ issueKey, jiraBaseUrl, jiraApiToken, jiraEmail, jiraAuthType, openaiApiKey, openaiModel }) => {
+    const config = await getConfig({
+      jiraBaseUrl,
+      jiraApiToken,
+      jiraEmail,
+      jiraAuthType,
+      openaiApiKey,
+      openaiModel,
+    });
+
+    if (!config.openaiApiKey) {
+      throw new Error('Missing OPENAI_API_KEY. Set it in .env or pass openaiApiKey to the tool call.');
+    }
+
+    const result = await processIssueSummary({
+      issueKey,
+      jiraBaseUrl: config.jiraBaseUrl,
+      jiraApiToken: config.jiraApiToken,
+      jiraEmail: config.jiraEmail,
+      jiraAuthType: config.jiraAuthType,
+      openaiApiKey: config.openaiApiKey,
+      openaiModel: config.openaiModel,
+    });
 
     return {
       content: [
@@ -29,8 +85,9 @@ server.tool(
           type: 'text',
           text: JSON.stringify(
             {
-              issueKey: result.issueKey,
-              outputPath: result.outputPath,
+              issueKey: result.issue.key || issueKey,
+              model: config.openaiModel,
+              summary: result.summary,
             },
             null,
             2,

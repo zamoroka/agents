@@ -1,7 +1,10 @@
+export type JiraAuthType = 'auto' | 'bearer' | 'basic';
+
 export type Config = {
   jiraBaseUrl: string;
   jiraApiToken: string;
   jiraEmail: string;
+  jiraAuthType: JiraAuthType;
   openaiApiKey: string;
   openaiModel: string;
 };

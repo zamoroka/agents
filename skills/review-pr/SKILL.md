@@ -2,7 +2,7 @@
 name: review-pr
 description: "Reviews Bitbucket pull requests, summarizes diffs, and produces a full review artifact. Use when the user asks to review a PR, inspect PR changes, or run a pull request code review."
 metadata:
-  version: "2.1.5"
+  version: "2.1.6"
   category: "engineering"
 ---
 
@@ -65,14 +65,13 @@ Check `$PROJECT_ROOT/.env.local` for the following variables:
 ```
 AGENT_CODEREVIEW_BITBUCKET_EMAIL
 AGENT_CODEREVIEW_BITBUCKET_TOKEN
-AGENT_CODEREVIEW_JIRA_URL
-AGENT_CODEREVIEW_JIRA_TOKEN
-OPENAI_API_KEY
 ```
 
 For each missing variable, ask the user to provide the value (ask all missing variables at once in a single prompt, not one by one). Then append the missing variables to `$PROJECT_ROOT/.env.local`.
 
 Also ensure `.env.local` is listed in `$PROJECT_ROOT/.gitignore`. If it is not, append `.env.local` to the `.gitignore` file.
+
+Jira MCP credentials are not read from `$PROJECT_ROOT/.env.local`. They must be set in `~/.agents/mcp/jira-mcp/.env` (or passed directly in tool arguments).
 
 For token requirements and Jira/Bitbucket authentication troubleshooting, use `./shared/auth-setup.md`.
 
@@ -106,15 +105,29 @@ If user says PR is not related to Jira, skip Step 5 and Step 9 ticket-alignment 
 
 ## Step 5 — Gather and summarize Jira ticket
 
-Call the `jira-mcp` MCP tool `get_jira_issue_details` with the detected Jira key (for example `SUNNYR-25`). It fetches the ticket, summarizes it with a small OpenAI model, and writes:
-
-- `$PROJECT_ROOT/.agents/artifacts/YYYY-mm-dd-pr-{REPO_SLUG}-{PR_NUMBER}-issue-summary.md`
+Call the `jira-mcp` MCP tool `fetch_jira_issue_ai_summary` with the detected Jira key (for example `SUNNYR-25`).
 
 Tool input:
 
 ```json
-{"repoSlug":"{REPO_SLUG}","prNumber":"{PR_NUMBER}","issueKey":"{ISSUE_KEY}"}
+{"issueKey":"{ISSUE_KEY}"}
 ```
+
+The tool returns JSON containing `summary` markdown text. The agent must write that summary to:
+
+- `$PROJECT_ROOT/.agents/artifacts/YYYY-mm-dd-pr-{REPO_SLUG}-{PR_NUMBER}-issue-summary.md`
+
+When writing this file, use this exact wrapper:
+
+```md
+# PR {PR_NUMBER} issue summary
+
+Jira ticket: {ISSUE_KEY}
+
+{summary}
+```
+
+If artifact write fails because the directory does not exist, create `$PROJECT_ROOT/.agents/artifacts/` and retry.
 
 If needed, use the shared Node 25 fallback above to start `jira-mcp`.
 
