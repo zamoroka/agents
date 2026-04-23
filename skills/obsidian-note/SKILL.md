@@ -1,7 +1,7 @@
 ---
 name: obsidian-note
-version: 1.0.0
-description: "Obsidian: Create or update any vault note from markdown or plain text input."
+version: 2.0.0
+description: "Obsidian: Create or update any wiki page from markdown or plain text input."
 metadata:
   openclaw:
     category: "productivity"
@@ -9,20 +9,20 @@ metadata:
 
 # obsidian-note
 
-Create or update any note in the Obsidian knowledge vault. Automatically determines the correct folder, derives tags, detects duplicates, and delegates meeting notes to the `obsidian-meeting-manage` skill.
+Create or update any wiki page in the Obsidian vault. Automatically determines the correct folder, derives tags, detects duplicates, builds wiki-links to related pages, and delegates meeting notes to the `obsidian-meeting-manage` skill.
 
 ## Vault context
 
 - **Vault root:** `/Users/zamoroka_pavlo/Library/CloudStorage/GoogleDrive-zapashok0@gmail.com/My Drive/obsidian/zamoroka`
 - **AGENTS.md:** `<vault root>/AGENTS.md` — always read this first; it is the source of truth for structure, tagging, personas, and conventions
-- **Template:** `_templates/note.md`
+- **Template:** `_templates/page.md`
 
 ## When to use
 
 Invoke this skill when the user wants to:
 - Capture a note, idea, or piece of information
 - Save a personal reflection, dev tip, or work note
-- Update an existing note with new content
+- Update an existing wiki page with new content
 - "Make a note of…", "Add to my notes…", "Write this down…"
 - View their todo/task list — "what's on my todo?", "show my tasks", "what do I need to do?"
 
@@ -36,11 +36,11 @@ Follow these steps precisely when this skill is invoked.
 
 ### Command usage policy
 
-Use Obsidian CLI commands for discovery efficiency (mainly search and relationship discovery between notes).
+Use Obsidian CLI commands for discovery efficiency (mainly search and relationship discovery between pages).
 
-- Prefer `obsidian search` to find candidate notes, related topics, and nearby context.
-- For note updates, edit markdown files directly at the vault path.
-- For note creation, default to direct markdown file creation; CLI create/append is optional only when it is clearly faster.
+- Prefer `obsidian search` to find candidate pages, related topics, and nearby context.
+- For page updates, edit markdown files directly at the vault path.
+- For page creation, default to direct markdown file creation; CLI create/append is optional only when it is clearly faster.
 
 ### Step 1 — Gather input
 
@@ -73,7 +73,7 @@ This provides:
 - Current folder structure
 - Tagging rules (folder-based and content-based)
 - Known projects, team members, and tech stack
-- Persona instructions for Notes Manager (Persona 3)
+- Persona instructions for Wiki Page Manager (Persona 3)
 
 ---
 
@@ -104,21 +104,38 @@ Only ask one question at a time. Wait for the answer before continuing.
 
 ---
 
-### Step 5 — Search for existing notes
+### Step 5 — Search for existing pages
 
 Before creating a new file, check for duplicates:
 ```bash
 obsidian search query="<2–3 key topic terms>"
 ```
 
-Also run 1-2 focused follow-up searches with related terms to find connected notes that should be cross-referenced or updated instead of creating a duplicate.
+Also run 1-2 focused follow-up searches with related terms to find connected pages that should be cross-referenced or updated instead of creating a duplicate.
 
-- **Match found** (same topic / same folder / same title intent) → plan to **UPDATE** that note
-- **No match** → plan to **CREATE** a new note
+- **Match found** (same topic / same folder / same title intent) → plan to **UPDATE** that page
+- **No match** → plan to **CREATE** a new page
 
 ---
 
-### Step 6 — Derive tags
+### Step 6 — Find related pages and detect contradictions
+
+Search the vault for pages related to the current topic:
+```bash
+obsidian search query="<key concept terms>"
+```
+
+For each related page found:
+1. Read it to understand its content
+2. Collect its filename (without `.md`) for the `related` YAML property
+3. Identify natural places in the content to add `[[wiki-link]]` references
+4. **Check for contradictions** — if the existing page and new content state conflicting facts or decisions, stop and ask the user in chat:
+   > *"I found a conflict: [page A] says X, but the new content says Y. Which is correct, or should I note both?"*
+   Only proceed after the user decides.
+
+---
+
+### Step 7 — Derive tags
 
 Apply tags from two dimensions (per AGENTS.md Tagging Rules):
 
@@ -141,11 +158,11 @@ Apply tags from two dimensions (per AGENTS.md Tagging Rules):
 - Project: `al-rajhi-bank`, `swisssense`, `elon`, `sunnyeurope`, `sogesma`
 - People (CamelCase, no spaces): e.g. `ViktorYakovenko`, `IvanBordiuh`
 
-Minimum **2 tags** per note.
+Minimum **2 tags** per page.
 
 ---
 
-### Step 7 — Determine the note title and filename
+### Step 8 — Determine the page title and filename
 
 - Use a descriptive, concise title matching the vault's existing naming style
 - Use emojis in filenames where vault convention already does (e.g. `💡Ideas.md`, `🍽️ Plate.md`)
@@ -154,32 +171,43 @@ Minimum **2 tags** per note.
 
 ---
 
-### Step 8 — Create or update the note
+### Step 9 — Confirm with user
 
-#### Creating a new note
+Before writing any file, describe the planned change and ask for confirmation:
+- **New page:** *"I'll create `Work/Dev notes/Redis.md` with these tags: `work`, `dev`, `redis`. Content: [brief summary]. Proceed?"*
+- **Update:** *"I want to add [description] to the `## Caching` section of `Work/Dev notes/Redis.md`. Proceed?"*
 
-Prefer direct markdown file creation to ensure correct YAML frontmatter and tags:
+Wait for confirmation before writing.
+
+---
+
+### Step 10 — Create or update the page
+
+Invoke the `impersonator` skill to match tone and style before writing any content.
+
+#### Creating a new page
+
+Use the most structurally similar existing page as a layout template. Then:
 
 1. Determine full path: `VAULT_ROOT/<folder>/<Title>.md`
 2. Write the file with this format:
 ```markdown
 ---
+updated: YYYY-MM-DD HH:MM:SS
 tags:
   - <tag1>
   - <tag2>
+related:
+  - "[[Related Page]]"
+summary: One sentence summary matching page language
 ---
 
-# <Note Title>
+# <Page Title>
 
-<Content>
+<Content with [[wiki-links]] to related pages>
 ```
-3. If a template-only scaffold is sufficient, you may use CLI:
-   ```bash
-   obsidian create name="<Title>" template=note
-   ```
-   Then finalize YAML + content via direct file operation.
 
-#### Updating an existing note
+#### Updating an existing page
 
 1. **Always read the file first** — before writing anything, read the current content directly from the file path.
 2. **Analyse the existing structure** — identify the formatting conventions used:
@@ -192,14 +220,18 @@ tags:
    - Use the same nesting depth and indentation
    - **Do not introduce new formatting conventions** (e.g. don't add `##` headings to a flat checklist file, don't add prose paragraphs to a bullet-list file)
 4. Merge/append new content:
-   - Append under the relevant existing section heading if it exists
+   - Insert under the relevant existing section heading if it exists
    - Add a new `## <Section>` heading only if the rest of the file also uses `##` headings
    - **Do not duplicate** content already present
-5. Write the updated markdown file back directly (preserving frontmatter).
+5. Update YAML frontmatter:
+   - Set `updated` to current datetime
+   - Add or update `related` with any newly discovered wiki-links
+   - Update `summary` if the page content has changed meaningfully
+6. Write the updated markdown file back directly (preserving frontmatter).
 
 #### Appending to special files (`💡Ideas.md`, `🍽️ Plate.md`)
 
-1. **Read the file first** to understand its structure (see "Updating an existing note" above).
+1. **Read the file first** to understand its structure (see "Updating an existing page" above).
 2. Format the new entry to match the existing style exactly.
 3. Use the CLI append command only if the formatted content is a simple single-line entry and direct edit is not simpler:
    ```bash
@@ -213,15 +245,29 @@ If the Obsidian CLI is unavailable or fails, create/edit the file directly at th
 
 ---
 
-### Step 9 — Confirm
+### Step 11 — Confirm
 
 Report:
-- ✅ Note created/updated: full file path
+- ✅ Page created/updated: full file path
 - ✅ Tags applied: list them
-- Offer: *"Would you like me to open the note in Obsidian?"* — if yes, run:
+- ✅ Related pages linked: list them (or note if none found)
+- Offer: *"Would you like me to open the page in Obsidian?"* — if yes, run:
   ```bash
   obsidian open path="<relative path from vault root>"
   ```
+
+---
+
+## Wiki Audit
+
+See the **Lint / Audit** section in `AGENTS.md` for full audit instructions.
+
+Triggered when user asks: *"lint the wiki"*, *"audit my notes"*, *"check for broken links"*
+
+Summary:
+1. Collect all `.md` files in the vault
+2. Check each for: missing/empty YAML properties, broken `[[wiki-links]]`, broken URLs, inconsistent tags
+3. Report grouped results with suggested fixes
 
 ---
 
@@ -242,9 +288,9 @@ Summary:
 
 ## Examples
 
-**New dev note:**
+**New dev page:**
 > User: *"Make a note: to reload nginx config use `nginx -s reload`"*
-> Skill: searches for existing nginx note → not found → creates `Work/Dev notes/nginx.md` with tags `work`, `dev`
+> Skill: searches for existing nginx page → not found → confirms with user → creates `Work/Dev notes/nginx.md` with tags `work`, `dev`
 
 **Append to Ideas:**
 > User: *"Add idea: build a CLI tool that summarises Jira tickets with AI"*
@@ -266,11 +312,14 @@ Summary:
 > User: *"What's on my todo?"*
 > Skill: runs `obsidian tasks todo`, filters/groups/sorts the output, renders the report
 
+**Contradiction found:**
+> Skill: *"I found a conflict: `Work/Dev notes/Redis.md` says we're not using Redis in ARB, but the new content says Redis is active. Which is correct?"*
+
 ---
 
 ## Notes
 
-- Always write note content in the **same language as the provided content** (Ukrainian or English). YAML tags are always in English.
+- Always write page content in the **same language as the provided content** (Ukrainian or English). YAML tags always in English.
 - Always load `AGENTS.md` first — it is the living source of truth; folder structure and tagging rules may have been updated since this skill was written.
-- Never create a new file if an existing note should be updated.
+- Never create a new file if an existing page should be updated.
 - When the vault's AGENTS.md is updated with new projects, folders, or team members, respect those changes immediately.
