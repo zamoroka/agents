@@ -2,3 +2,4 @@
 node_modules/
 .env
 dist/
+/skills/timelog/timelog-issue-cache.json

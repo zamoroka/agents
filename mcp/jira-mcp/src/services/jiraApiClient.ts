@@ -1,6 +1,6 @@
 import { request as httpRequest } from 'node:http';
 import { request as httpsRequest } from 'node:https';
-import type { JiraAuthType, JiraIssue, JiraIssueWorklogPage, JiraSearchResult, JiraUser } from '../types/index.js';
+import type { JiraAuthType, JiraIssue, JiraIssueWorklogPage, JiraSearchResult, JiraUser, JiraWorklog } from '../types/index.js';
 
 const normalizeBaseUrl = (value: string): string => value.replace(/\/$/, '');
 
@@ -36,13 +36,17 @@ type JiraPaginatedInput = {
   maxResults?: number;
 };
 
-const fetchJson = async <T>({
+const requestJson = async <T>({
   url,
+  method,
   headers,
+  body,
   redirectCount = 0,
 }: {
   url: URL;
+  method: 'GET' | 'POST';
   headers: Record<string, string>;
+  body?: unknown;
   redirectCount?: number;
 }): Promise<T> => {
   if (redirectCount > 5) {
@@ -55,7 +59,7 @@ const fetchJson = async <T>({
     const req = requestImpl(
       url,
       {
-        method: 'GET',
+        method,
         headers,
       },
       (response) => {
@@ -75,7 +79,7 @@ const fetchJson = async <T>({
             }
 
             const redirectedUrl = new URL(location, url);
-            fetchJson<T>({ url: redirectedUrl, headers, redirectCount: redirectCount + 1 }).then(resolve).catch(reject);
+            requestJson<T>({ url: redirectedUrl, method, headers, body, redirectCount: redirectCount + 1 }).then(resolve).catch(reject);
             return;
           }
 
@@ -97,23 +101,76 @@ const fetchJson = async <T>({
       reject(error);
     });
 
+    if (method === 'POST' && body !== undefined) {
+      req.write(JSON.stringify(body));
+    }
+
     req.end();
   });
 };
 
-const fetchJiraWithAuth = async <T>({ url, token, email, jiraAuthType }: { url: URL } & JiraAuthInput): Promise<T> => {
+const fetchJson = async <T>({
+  url,
+  headers,
+  redirectCount = 0,
+}: {
+  url: URL;
+  headers: Record<string, string>;
+  redirectCount?: number;
+}): Promise<T> => requestJson<T>({ url, method: 'GET', headers, redirectCount });
+
+const postJson = async <T>({
+  url,
+  headers,
+  body,
+  redirectCount = 0,
+}: {
+  url: URL;
+  headers: Record<string, string>;
+  body: unknown;
+  redirectCount?: number;
+}): Promise<T> => requestJson<T>({ url, method: 'POST', headers, body, redirectCount });
+
+const fetchJiraWithAuth = async <T>({
+  url,
+  token,
+  email,
+  jiraAuthType,
+  method = 'GET',
+  body,
+}: {
+  url: URL;
+  method?: 'GET' | 'POST';
+  body?: unknown;
+} & JiraAuthInput): Promise<T> => {
   const baseHeaders = {
     Accept: 'application/json',
+    ...(method === 'POST' ? { 'Content-Type': 'application/json' } : {}),
   };
 
-  if (jiraAuthType === 'bearer') {
+  const requestWithAuth = (authHeader: string): Promise<T> => {
+    if (method === 'POST') {
+      return postJson<T>({
+        url,
+        body,
+        headers: {
+          ...baseHeaders,
+          Authorization: authHeader,
+        },
+      });
+    }
+
     return fetchJson<T>({
       url,
       headers: {
         ...baseHeaders,
-        Authorization: getBearerAuthHeader(token),
+        Authorization: authHeader,
       },
     });
+  };
+
+  if (jiraAuthType === 'bearer') {
+    return requestWithAuth(getBearerAuthHeader(token));
   }
 
   if (jiraAuthType === 'basic') {
@@ -121,36 +178,18 @@ const fetchJiraWithAuth = async <T>({ url, token, email, jiraAuthType }: { url: 
       throw new Error('jiraAuthType is basic but jiraEmail is not set. Set JIRA_EMAIL in .env or pass jiraEmail to the tool call.');
     }
 
-    return fetchJson<T>({
-      url,
-      headers: {
-        ...baseHeaders,
-        Authorization: getBasicAuthHeader(email, token),
-      },
-    });
+    return requestWithAuth(getBasicAuthHeader(email, token));
   }
 
   try {
-    return await fetchJson<T>({
-      url,
-      headers: {
-        ...baseHeaders,
-        Authorization: getBearerAuthHeader(token),
-      },
-    });
+    return await requestWithAuth(getBearerAuthHeader(token));
   } catch (error) {
     if (!(error instanceof JiraHttpError) || error.statusCode !== 401 || !email) {
       throw error;
     }
   }
 
-  return fetchJson<T>({
-    url,
-    headers: {
-      ...baseHeaders,
-      Authorization: getBasicAuthHeader(email, token),
-    },
-  });
+  return requestWithAuth(getBasicAuthHeader(email, token));
 };
 
 export const getJiraIssue = async ({ baseUrl, issueKey, token, email, jiraAuthType }: GetJiraIssueInput): Promise<JiraIssue> => {
@@ -213,4 +252,51 @@ export const getJiraIssueWorklogs = async ({
   url.searchParams.set('startAt', String(startAt ?? 0));
 
   return fetchJiraWithAuth<JiraIssueWorklogPage>({ url, token, email, jiraAuthType });
+};
+
+export const addJiraIssueWorklog = async ({
+  baseUrl,
+  token,
+  email,
+  jiraAuthType,
+  issueKey,
+  timeSpent,
+  timeSpentSeconds,
+  comment,
+  started,
+}: {
+  baseUrl: string;
+  issueKey: string;
+  timeSpent?: string;
+  timeSpentSeconds?: number;
+  comment?: string;
+  started?: string;
+} & JiraAuthInput): Promise<JiraWorklog> => {
+  const url = new URL(`${normalizeBaseUrl(baseUrl)}/rest/api/2/issue/${encodeURIComponent(issueKey)}/worklog`);
+  const payload: Record<string, unknown> = {};
+
+  if (typeof timeSpent === 'string' && timeSpent.trim()) {
+    payload.timeSpent = timeSpent.trim();
+  }
+
+  if (typeof timeSpentSeconds === 'number' && Number.isFinite(timeSpentSeconds) && timeSpentSeconds > 0) {
+    payload.timeSpentSeconds = Math.floor(timeSpentSeconds);
+  }
+
+  if (typeof comment === 'string' && comment.trim()) {
+    payload.comment = comment.trim();
+  }
+
+  if (typeof started === 'string' && started.trim()) {
+    payload.started = started.trim();
+  }
+
+  return fetchJiraWithAuth<JiraWorklog>({
+    url,
+    token,
+    email,
+    jiraAuthType,
+    method: 'POST',
+    body: payload,
+  });
 };

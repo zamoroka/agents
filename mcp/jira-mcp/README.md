@@ -64,6 +64,38 @@ Response:
   - `details[]` with each worklog item and short description of what was done
   - `markdownSummary` ready for direct user-facing reporting
 
+### `add_jira_timelog`
+
+Adds a Jira worklog entry to an issue.
+
+Input:
+
+```json
+{
+  "issueKey": "SUNNYR-60",
+  "timeSpent": "15m",
+  "timeSpentSeconds": 900,
+  "comment": "PR PoC review and notes",
+  "started": "2026-04-20T10:15:00.000+0000",
+  "jiraBaseUrl": "https://jira.example.com",
+  "jiraApiToken": "optional-override-token",
+  "jiraEmail": "optional-user@example.com",
+  "jiraAuthType": "auto|bearer|basic"
+}
+```
+
+Required input:
+- `issueKey`
+- one of `timeSpent` or `timeSpentSeconds`
+
+Optional:
+- `comment`
+- `started` (Jira datetime format)
+- Jira overrides: `jiraBaseUrl`, `jiraApiToken`, `jiraEmail`, `jiraAuthType`
+
+Response:
+- JSON string with created Jira worklog payload.
+
 ### `fetch_jira_issue_ai_summary`
 
 Fetches Jira issue details first, then generates a markdown summary via LLM.
