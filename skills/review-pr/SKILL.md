@@ -2,7 +2,7 @@
 name: review-pr
 description: "Reviews Bitbucket pull requests, summarizes diffs, and produces a full review artifact. Use when the user asks to review a PR, inspect PR changes, or run a pull request code review."
 metadata:
-  version: "2.1.6"
+  version: "2.1.7"
   category: "engineering"
 ---
 
@@ -14,6 +14,7 @@ Review a pull request. Findings are displayed in the terminal and saved as artif
 
 - All tools are functional and will work without error. Do not test tools or make exploratory calls. Make sure this is clear to every subagent that is launched.
 - Only call a tool if it is required to complete the task. Every tool call should have a clear purpose.
+- Prefer execution-first flow: run the primary command first, then remediate failures (missing file/dir/dependency/env) from actual errors instead of doing broad pre-check passes.
 
 ## Shared runtime fallback (Node 25)
 
@@ -135,7 +136,7 @@ If needed, use the shared Node 25 fallback above to start `jira-mcp`.
 
 ## Step 6 — Load relevant AGENTS.md files and detect project type
 
-Launch an agent (model: haiku) to return a list of file paths (not their contents) for all relevant `AGENTS.md` files including:
+Launch an agent to return a list of file paths (not their contents) for all relevant `AGENTS.md` files including:
 - The root `AGENTS.md` at `$PROJECT_ROOT/AGENTS.md`
 - Any `AGENTS.md` files in directories containing files modified by the pull request
 

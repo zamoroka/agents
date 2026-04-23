@@ -14,7 +14,7 @@ For claims like "won't work", "breaks X", or "overrides Y":
 
 - `pr-ticket-alignment-checker`: compare PR diff against `YYYY-mm-dd-pr-{REPO_SLUG}-{PR_NUMBER}-issue-summary.md`; flag missing ticket requirements or out-of-scope implementation.
 - `code-quality-pragmalist`: correctness, runtime risk, logic defects, API misuse, and missing edge-case handling.
-- `claude-md-compliance-checker`: compliance with `AGENTS.md` rules, required project conventions, and mandated file/format patterns.
+- `md-compliance-checker`: compliance with `AGENTS.md` rules, required project conventions, and mandated file/format patterns.
 
 ## False-positive filters
 
