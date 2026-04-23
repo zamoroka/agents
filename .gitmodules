@@ -1,0 +1,3 @@
+[submodule "mcp/chrome-devtools-mcp"]
+	path = mcp/chrome-devtools-mcp
+	url = https://github.com/ChromeDevTools/chrome-devtools-mcp
