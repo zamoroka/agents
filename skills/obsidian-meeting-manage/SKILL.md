@@ -13,11 +13,9 @@ Create or update a Vaimo meeting wiki page in the Obsidian vault. Automatically 
 
 ## Vault context
 
-- **Vault root:** `/Users/zamoroka_pavlo/Library/CloudStorage/GoogleDrive-zapashok0@gmail.com/My Drive/obsidian/zamoroka`
+- **Vault root:** see `AGENTS.md` — always read it first; it has the vault path, folder structure, project list, TASKS.md locations, and tagging rules
 - **Meeting notes folder:** `Work/Vaimo/Meeting notes/`
-- **Naming convention:** `YYYY.MM.DD <Title>.md` where `<Title>` is `1-1 <P1> - <P2>` for 2-person meetings, or a descriptive name (e.g. `ARB Team Sync`) for 3+ people
-- **TASKS.md locations:** `Work/Vaimo/projects/ARB/TASKS.md`, `Work/Vaimo/projects/SunnyEurope/TASKS.md`, `Work/Vaimo/projects/SwissSense/TASKS.md`
-- **Known projects:** ARB (Al-Rajhi Bank), SunnyEurope, SwissSense, Elon, SOGESMA
+- **Naming convention:** see **Meeting notes naming** rule in AGENTS.md Persona 3 (`1-1 P1 - P2` for 2-person, short descriptive title for 3+)
 
 ## When to use
 
@@ -85,17 +83,10 @@ For each related page found:
 
 ### Step 5 — Derive YAML tags
 
-Always include:
-- `work`, `vaimo`, `meeting`
-
-Add from participants (CamelCase, no spaces):
-- e.g. `IvanBordiuh`, `MaksymYavorskyi`, `ViktorYakovenko`
-
-Add from project:
-- `al-rajhi-bank` (ARB), `swisssense`, `sunnyeurope`, `elon`, `sogesma`
-
-Add from content signals (if detected):
-- `transcript`, `architecture`, `adr`, `decision`, `magento`, `docker`, `kubernetes`, `redis`, `newrelic`, `gcp`, `ai`
+Apply tags per the **Tagging Rules** in AGENTS.md. For meeting pages always include `work`, `vaimo`, `meeting`, plus:
+- participant tags (CamelCase, no spaces): e.g. `IvanBordiuh`, `MaksymYavorskyi`
+- project tag from content signals: `al-rajhi-bank`, `swisssense`, `sunnyeurope`, `elon`, `sogesma`
+- content signal tags when detected: `transcript`, `architecture`, `adr`, `decision`, `magento`, `docker`, `kubernetes`, `redis`, `newrelic`, `gcp`, `ai`
 
 ### Step 6 — Confirm with user
 
@@ -107,29 +98,11 @@ Wait for confirmation before writing.
 
 ### Step 7 — Create or update the page
 
-Invoke the `impersonator` skill to match tone and style before writing content.
+Invoke the `impersonator` skill before writing content.
 
-**File path:** `Work/Vaimo/Meeting notes/YYYY.MM.DD <Title>.md`
-where `<Title>` is determined as follows:
-- **Exactly 2 participants** → `1-1 <P1> - <P2>` (e.g. `1-1 Pavlo - Ivan`)
-- **3 or more participants** → a short descriptive name (e.g. `ARB Team Sync`)
+Use the **Wiki Page Format** from AGENTS.md for YAML frontmatter. The meeting-specific body structure is:
 
-**Page format:**
 ```markdown
----
-updated: YYYY-MM-DD HH:MM:SS
-tags:
-  - work
-  - vaimo
-  - meeting
-  - <people-tags>
-  - <project-tag>
-  - <content-tags>
-related:
-  - "[[Project README or TASKS]]"
-  - "[[Previous related meeting]]"
-summary: One sentence summary of meeting topics and decisions
----
 <Weekday>, <DD> <Mon> <YY> · <email or identifier of external participant if known>
 
 ### <Topic 1>
@@ -145,15 +118,13 @@ summary: One sentence summary of meeting topics and decisions
 
 - <Person>
     - <Action item>
-- <Person>
-    - <Action item>
 ```
 
-Create/update the markdown file directly at the vault path.
+**File path:** `Work/Vaimo/Meeting notes/YYYY.MM.DD <Title>.md` (see naming convention in Vault context above).
 
-If CLI create is used for speed, treat it as a scaffold only and still verify/finalize file content via direct markdown edit.
+Create/update the markdown file directly at the vault path. If CLI create is used for speed, treat it as a scaffold and still finalize content via direct file edit.
 
-**For updates:** Read the existing markdown file, merge new sections intelligently. Do not duplicate content that already exists. Append to `### Next Steps` or create it if missing. Update `updated` timestamp.
+**For updates:** Read the existing file, merge new sections intelligently. Do not duplicate existing content. Append to `### Next Steps` or create it if missing. Update `updated` timestamp.
 
 ### Step 8 — Update TASKS.md
 
@@ -194,7 +165,6 @@ Report:
 
 ## Notes
 
-- Always write page content in the **same language as the provided content** (Ukrainian or English). YAML tags are always in English.
-- Participant tags use CamelCase with no spaces (e.g. `PavloZamoroka`, `IvanBordiuh`).
 - "Pavlo" in content always refers to Pavlo Zamoroka (vault owner) — no need to ask for clarification.
+- Write page content in the **same language as the provided content**. YAML tags always in English.
 - If the obsidian CLI is unavailable, continue with direct markdown edits without interrupting the user.

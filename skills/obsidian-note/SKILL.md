@@ -13,8 +13,7 @@ Create or update any wiki page in the Obsidian vault. Automatically determines t
 
 ## Vault context
 
-- **Vault root:** `/Users/zamoroka_pavlo/Library/CloudStorage/GoogleDrive-zapashok0@gmail.com/My Drive/obsidian/zamoroka`
-- **AGENTS.md:** `<vault root>/AGENTS.md` — always read this first; it is the source of truth for structure, tagging, personas, and conventions
+- **Vault root:** see `AGENTS.md` — always read it first; it is the source of truth for the vault path, structure, tagging, personas, and conventions
 - **Template:** `_templates/page.md`
 
 ## When to use
@@ -79,90 +78,35 @@ This provides:
 
 ### Step 4 — Understand content and determine placement
 
-Analyse the content to determine:
-- **Domain:** work vs personal
-- **Topic signals:** tech terms, project names, people names, keywords matching AGENTS.md tagging rules
+Analyse the content to determine domain (work vs personal) and topic signals (tech terms, project names, keywords).
 
-Use the following decision tree (from Persona 3 in AGENTS.md):
-
-```
-Work-related tech topic / how-to / tool reference  →  Work/Dev notes/<tool-or-topic>/
-Work idea or proposal                               →  Work/💡Ideas.md  (append)
-PoC or project research                             →  Work/PoC/<ProjectName>/
-Personal reflection, value, or principle            →  Personal/Thoughts/
-DIY or hands-on project                             →  Personal/DIY/
-Life purpose, Ikigai, mission                       →  Personal/Ikigai/
-Productivity tip or technique                       →  Personal/Productivity/
-```
-
-**If placement is ambiguous** (e.g. no clear work/personal signal, no recognisable project name), ask a single focused question before proceeding. Examples:
-> *"Is this work-related or personal?"*
-> *"Which project does this relate to — ARB, SunnyEurope, SwissSense, or general/none?"*
-> *"Should this go under Dev notes, or is it a personal productivity tip?"*
-
-Only ask one question at a time. Wait for the answer before continuing.
+Use the **Persona 3 Decision Flow** from AGENTS.md to pick the correct folder. If placement is ambiguous, ask one focused question before continuing.
 
 ---
 
-### Step 5 — Search for existing pages
+### Step 5 — Search for existing and related pages
 
-Before creating a new file, check for duplicates:
+Run 2-3 focused searches to cover both duplicate detection and related-page discovery in one pass:
 ```bash
-obsidian search query="<2–3 key topic terms>"
+obsidian search query="<key topic terms>"
+obsidian search query="<related concept or project>"
 ```
 
-Also run 1-2 focused follow-up searches with related terms to find connected pages that should be cross-referenced or updated instead of creating a duplicate.
-
-- **Match found** (same topic / same folder / same title intent) → plan to **UPDATE** that page
+- **Existing match** (same topic / same folder / same title intent) → plan to **UPDATE** that page
 - **No match** → plan to **CREATE** a new page
+- **Related pages found** → collect filenames for the `related` YAML property and identify natural `[[wiki-link]]` placements in content
+
+**Contradiction check:** if an existing page and the new content state conflicting facts, follow the **Contradiction Detection** rules in AGENTS.md — ask the user in chat what to do before proceeding.
 
 ---
 
-### Step 6 — Find related pages and detect contradictions
+### Step 6 — Derive tags
 
-Search the vault for pages related to the current topic:
-```bash
-obsidian search query="<key concept terms>"
-```
-
-For each related page found:
-1. Read it to understand its content
-2. Collect its filename (without `.md`) for the `related` YAML property
-3. Identify natural places in the content to add `[[wiki-link]]` references
-4. **Check for contradictions** — if the existing page and new content state conflicting facts or decisions, stop and ask the user in chat:
-   > *"I found a conflict: [page A] says X, but the new content says Y. Which is correct, or should I note both?"*
-   Only proceed after the user decides.
+Apply tags per the **Tagging Rules** in AGENTS.md (folder-based mandatory tags + content-based tags). Minimum 2 tags per page.
 
 ---
 
-### Step 7 — Derive tags
-
-Apply tags from two dimensions (per AGENTS.md Tagging Rules):
-
-**1. Folder-based mandatory tags:**
-| Destination folder | Required tags |
-|--------------------|--------------|
-| `Work/` | `work` |
-| `Work/Dev notes/` | `work`, `dev` |
-| `Work/PoC/` | `work`, `vaimo`, `poc` |
-| `Personal/` | `personal` |
-| `Personal/Thoughts/` | `personal`, `thoughts` |
-| `Personal/Ikigai/` | `personal`, `ikigai` |
-| `Personal/DIY/` | `personal`, `diy` |
-| `Personal/Productivity/` | `personal`, `productivity` |
-
-**2. Content-based tags (add when detected):**
-- `architecture`, `adr`, `decision` — architecture or decision documents
-- `ai`, `prompt` — AI-related content
-- `magento`, `docker`, `kubernetes`, `redis`, `newrelic`, `gcp` — specific tech topics
-- Project: `al-rajhi-bank`, `swisssense`, `elon`, `sunnyeurope`, `sogesma`
-- People (CamelCase, no spaces): e.g. `ViktorYakovenko`, `IvanBordiuh`
-
-Minimum **2 tags** per page.
-
----
-
-### Step 8 — Determine the page title and filename
+### Step 7 — Determine the page title and filename
 
 - Use a descriptive, concise title matching the vault's existing naming style
 - Use emojis in filenames where vault convention already does (e.g. `💡Ideas.md`, `🍽️ Plate.md`)
@@ -171,7 +115,7 @@ Minimum **2 tags** per page.
 
 ---
 
-### Step 9 — Confirm with user
+### Step 8 — Confirm with user
 
 Before writing any file, describe the planned change and ask for confirmation:
 - **New page:** *"I'll create `Work/Dev notes/Redis.md` with these tags: `work`, `dev`, `redis`. Content: [brief summary]. Proceed?"*
@@ -181,31 +125,13 @@ Wait for confirmation before writing.
 
 ---
 
-### Step 10 — Create or update the page
+### Step 9 — Create or update the page
 
-Invoke the `impersonator` skill to match tone and style before writing any content.
+Invoke the `impersonator` skill before writing any content.
 
 #### Creating a new page
 
-Use the most structurally similar existing page as a layout template. Then:
-
-1. Determine full path: `VAULT_ROOT/<folder>/<Title>.md`
-2. Write the file with this format:
-```markdown
----
-updated: YYYY-MM-DD HH:MM:SS
-tags:
-  - <tag1>
-  - <tag2>
-related:
-  - "[[Related Page]]"
-summary: One sentence summary matching page language
----
-
-# <Page Title>
-
-<Content with [[wiki-links]] to related pages>
-```
+Use the most structurally similar existing page as a layout template. Use the **Wiki Page Format** from AGENTS.md for YAML frontmatter. Add `[[wiki-links]]` naturally in the content to related pages found in Step 5.
 
 #### Updating an existing page
 
@@ -245,7 +171,7 @@ If the Obsidian CLI is unavailable or fails, create/edit the file directly at th
 
 ---
 
-### Step 11 — Confirm
+### Step 10 — Confirm
 
 Report:
 - ✅ Page created/updated: full file path
@@ -273,16 +199,11 @@ Summary:
 
 ## Todo Report
 
-See **[todo-report.md](todo-report.md)** for full instructions.
-
 Triggered when user asks: *"what's on my todo?"*, *"show my tasks"*, *"what do I need to do?"*
 
-Summary:
-1. Run `obsidian tasks todo`
-2. Filter out wishlist / shopping items
-3. Group by topic (ARB, SunnyEurope, SwissSense, Vaimo, Dev/Tools, Personal)
-4. Sort by priority (🔺⏫🔼 → none → 🔽⏬), then by due date (`📅`) soonest first
-5. Render grouped markdown report; put overdue/due-today tasks at the top
+Load and follow the dedicated **[todo-report.md](todo-report.md) instructions only when this trigger is active:
+
+- `./todo-report.md`
 
 ---
 
@@ -319,7 +240,6 @@ Summary:
 
 ## Notes
 
-- Always write page content in the **same language as the provided content** (Ukrainian or English). YAML tags always in English.
-- Always load `AGENTS.md` first — it is the living source of truth; folder structure and tagging rules may have been updated since this skill was written.
-- Never create a new file if an existing page should be updated.
-- When the vault's AGENTS.md is updated with new projects, folders, or team members, respect those changes immediately.
+- Always load `AGENTS.md` first (Step 3) — it is the living source of truth; folder structure, tagging rules, and project lists may have changed.
+- Write page content in the **same language as the provided content**. YAML tags always in English.
+- If the obsidian CLI is unavailable, fall back to direct file operations without interrupting the user.
