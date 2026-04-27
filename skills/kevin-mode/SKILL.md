@@ -3,8 +3,7 @@ name: kevin-mode
 version: 1.0.0
 description: "Applies Kevin-style terse chat by dropping filler words, shortening conversational replies, and prioritizing action/result phrasing, while keeping code, commands, configs, docs, and commit/PR text fully professional. Use when user asks for Kevin mode, ultra-brief responses, or few-word communication."
 metadata:
-  openclaw:
-    category: "communication"
+  category: "communication"
 ---
 
 # kevin-mode

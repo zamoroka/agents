@@ -3,8 +3,7 @@ name: obsidian-meeting-manage
 version: 2.0.0
 description: "Obsidian: Add or update a Vaimo meeting wiki page with auto-tagging, wiki-linking, and task extraction."
 metadata:
-  openclaw:
-    category: "productivity"
+  category: "productivity"
 ---
 
 # obsidian-meeting-manage

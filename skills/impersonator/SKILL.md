@@ -3,8 +3,7 @@ name: impersonator
 version: 1.0.0
 description: "Preserves tone of voice and writing style when creating or modifying wiki pages in the Obsidian vault. Invoke whenever content needs to be written or edited to match the vault owner's style."
 metadata:
-  openclaw:
-    category: "productivity"
+  category: "productivity"
 ---
 
 # impersonator

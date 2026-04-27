@@ -1,6 +1,6 @@
 # magento2-lsp-mcp usage
 
-Use this guide during `review-pr` when `PROJECT_TYPE=magento2`.
+Use this guide during `review-pr` when `PROJECT_TYPE=magento2`. Use [direct-tool-call.mjs](../../../mcp/direct-tool-call.mjs) to query Magento behavior evidence from the MCP tools listed in the next section. This will help validate or refute Magento-specific claims about merged/system behavior that cannot be confidently assessed from raw diff text alone.
 
 ## Purpose
 

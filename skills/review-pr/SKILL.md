@@ -74,7 +74,7 @@ Also ensure `.env.local` is listed in `$PROJECT_ROOT/.gitignore`. If it is not, 
 
 Jira MCP credentials are not read from `$PROJECT_ROOT/.env.local`. They must be set in `~/.agents/mcp/jira-mcp/.env` (or passed directly in tool arguments).
 
-For token requirements and Jira/Bitbucket authentication troubleshooting, use `./shared/auth-setup.md`.
+For token requirements and Jira/Bitbucket authentication troubleshooting, use [auth-setup.md](./shared/auth-setup.md).
 
 ---
 
@@ -185,8 +185,8 @@ Launch 3 agents with ordering constraints. Each agent that returns issues MUST u
 - `severity` — one of: `error`, `warning`, `suggestion`
 - `description` — what the issue is, why it was flagged, and how to fix it
 
-Before review, load and apply rules from `./shared/review-guardrails.md`.
-If the PR is a pure deletion, also apply `./shared/deletion-pr-checklist.md`.
+Before review, load and apply rules from [review-guardrails.md](./references/review-guardrails.md).
+If the PR is a pure deletion, also apply [deletion-pr-checklist.md](./references/deletion-pr-checklist.md).
 
 If Jira step was not skipped, run this sequence:
 
@@ -267,7 +267,7 @@ Use this naming convention for every artifact file:
 - 
 ## Additional references
 
-- `./shared/auth-setup.md` — Bitbucket/Jira token requirements and auth troubleshooting
-- `./shared/review-guardrails.md` — behavior-claim evidence rule, reviewer scopes, and false-positive filters
-- `./shared/deletion-pr-checklist.md` — extra checks for pure-deletion PRs
-- `./shared/magento2-lsp-mcp-usage.md` — Magento MCP usage and evidence expectations
+- [auth-setup.md](./references/auth-setup.md) — Bitbucket/Jira token requirements and auth troubleshooting
+- [review-guardrails.md](./references/review-guardrails.md) — behavior-claim evidence rule, reviewer scopes, and false-positive filters
+- [deletion-pr-checklist.md](./references/deletion-pr-checklist.md) — extra checks for pure-deletion PRs
+- [magento2-lsp-mcp-usage.md](./references/magento2-lsp-mcp-usage.md) — Magento MCP usage and evidence expectations

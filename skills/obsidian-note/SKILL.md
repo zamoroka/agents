@@ -3,8 +3,7 @@ name: obsidian-note
 version: 2.0.0
 description: "Obsidian: Create or update any wiki page from markdown or plain text input."
 metadata:
-  openclaw:
-    category: "productivity"
+  category: "productivity"
 ---
 
 # obsidian-note
@@ -14,7 +13,7 @@ Create or update any wiki page in the Obsidian vault. Automatically determines t
 ## Vault context
 
 - **Vault root:** see `AGENTS.md` — always read it first; it is the source of truth for the vault path, structure, tagging, personas, and conventions
-- **Template:** `_templates/page.md`
+- **Template:** [_templates/page.md](_templates/page.md)
 
 ## When to use
 
@@ -201,9 +200,9 @@ Summary:
 
 Triggered when user asks: *"what's on my todo?"*, *"show my tasks"*, *"what do I need to do?"*
 
-Load and follow the dedicated **[todo-report.md](todo-report.md) instructions only when this trigger is active:
+Load and follow the dedicated [todo-report.md](./todo-report.md) instructions only when this trigger is active:
 
-- `./todo-report.md`
+- [todo-report.md](./todo-report.md)
 
 ---
 
