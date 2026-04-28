@@ -2,7 +2,7 @@
 name: timelog
 description: "Summarizes Jira timelogs and logs new time entries in Jira. Use when the user asks for time reports or asks to log time (for example 'log 15m to SUNNYR-60' or 'log time on jira to pr PoC')."
 metadata:
-  version: "1.6.0"
+  version: "1.9.0"
   category: "engineering"
 ---
 
@@ -10,7 +10,7 @@ metadata:
 
 Generate Jira timelog reports and add Jira worklogs with lightweight issue mapping cache.
 
-This skill must use the Jira MCP server defined in `mcp/jira-mcp`.
+This skill must use the Jira MCP server defined in `~/.agents/mcp/jira-mcp`. If the MCP server not available, follow the instructions in `~/.agents/mcp/AGENTS.md` to call tool directly.
 
 ## When to use
 
@@ -52,7 +52,7 @@ Rules:
 
 ## Jira MCP tools
 
-Use only tools exposed by the `jira-mcp` server documented in `mcp/jira-mcp/README.md`.
+Use only tools exposed by the `jira-mcp` server documented in `~/.agents/mcp/jira-mcp/README.md`.
 
 - Reporting: `fetch_jira_my_timelogs`
 - Log time: `add_jira_timelog`
@@ -90,7 +90,7 @@ Call:
 ```
 
 Pass Jira auth overrides if explicitly provided by user (`jiraBaseUrl`, `jiraApiToken`, `jiraEmail`, `jiraAuthType`).
-If overrides are not provided, rely on `mcp/jira-mcp/.env` as described in `mcp/jira-mcp/README.md`.
+If overrides are not provided, rely on `~/.agents/mcp/jira-mcp/.env` as described in `~/.agents/mcp/jira-mcp/README.md`.
 
 ## Logging workflow
 
@@ -101,20 +101,21 @@ If overrides are not provided, rely on `mcp/jira-mcp/.env` as described in `mcp/
    - If no date is provided, use today's date.
    - Build `started` in Jira datetime format (`YYYY-MM-DDTHH:mm:ss.000+0000`) using local timezone.
 4. Resolve issue key:
-   - If explicit issue key is provided, use it.
-   - If not, check `skills/timelog/timelog-issue-cache.json` first (match `timelog_reasons`, then title).
-   - If cache match found, always ask for approval: "I found <ISSUE_KEY> (<ISSUE_TITLE>) from cache. Is this the right issue?"
-   - Never auto-log from cache without explicit user approval when issue key was not provided in the message.
-   - If user says no, call `fetch_jira_my_timelogs` with `days=30`, infer best candidates, and ask confirmation again (or let user provide exact key).
-   - If issue key is inferred from previous timelogs, always ask for explicit approval before logging.
-   - Never auto-log from inferred previous-timelog match when issue key was not provided in the message.
-5. Before writing, confirm comment text too (for example: "Use comment '<COMMENT>'?"). If comment is missing or unclear, ask user to provide one.
-6. After user confirms issue + time + date + comment, fetch issue details with `fetch_jira_issue_details` for the final issue key.
-7. Update `skills/timelog/timelog-issue-cache.json` for the final issue key:
+    - If explicit issue key is provided, use it.
+    - If not, check `skills/timelog/timelog-issue-cache.json` first (match `timelog_reasons`, then title).
+    - If no cache match, call `fetch_jira_my_timelogs` with `days=30`, infer best candidates, or ask user for exact key.
+    - Never auto-log when issue key was inferred; require explicit approval first.
+5. If comment is missing or unclear, ask user to provide one.
+6. Ask exactly one combined approval question before writing. Do not ask separate issue/comment/date confirmations.
+   - Format: "Log <TIME_SPENT> to <ISSUE_KEY> (<ISSUE_TITLE>) on <DATE> with comment \"<COMMENT>\"?"
+   - If issue key was inferred (cache or previous timelogs), include "inferred from cache" or "inferred from previous timelogs" in that same single approval question.
+   - If user says no, ask one follow-up asking what to change, then repeat one combined approval question.
+7. After the single combined approval, fetch issue details with `fetch_jira_issue_details` for the final issue key.
+8. Update `skills/timelog/timelog-issue-cache.json` for the final issue key:
    - upsert `issue_title`, `issue_description`
    - upsert normalized reason/comment in `timelog_reasons` without duplicates
-8. Call `add_jira_timelog` with `started`.
-9. Confirm logged time back to user with issue key, duration, date, and comment.
+9. Call `add_jira_timelog` with `started`.
+10. Confirm logged time back to user with issue key, duration, date, and comment.
 
 ## Response style
 
