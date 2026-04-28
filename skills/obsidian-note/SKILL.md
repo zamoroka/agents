@@ -54,19 +54,10 @@ Tool policy for note ingestion:
 Prompt mapping guard:
 - If user says `save meeting notes from this google doc` (or close variant), force Google Docs meeting flow: download via `doc_markdown_download` to `VAULT_ROOT/_raw`, then continue meeting workflow.
 
-1. Download each document as markdown via MCP tool `doc_markdown_download` with:
+1. Download each document as markdown via MCP tool `doc_markdown_download` from server `google-drive` with:
    - `doc_url`: source Google Doc URL
    - `output_dir`: `VAULT_ROOT/_raw`
-2. If MCP is unavailable, use fallback:
-   ```bash
-   node /Users/zamoroka_pavlo/.agents/mcp/direct-tool-call.mjs \
-     --server-command uv \
-     --server-args '["--directory","/Users/zamoroka_pavlo/.agents/mcp/google-drive-mcp","run","google-drive-mcp"]' \
-     --cwd /Users/zamoroka_pavlo/.agents/mcp/google-drive-mcp \
-     --sdk-dir /Users/zamoroka_pavlo/.agents/mcp/jira-mcp/node_modules/@modelcontextprotocol/sdk \
-     --tool doc_markdown_download \
-     --args '{"doc_url":"<DOC_URL>","output_dir":"VAULT_ROOT/_raw"}'
-   ```
+2. If MCP is unavailable, use `direct-tool-call` skill.
 3. Use fetched markdown as canonical input content.
 4. If mode resolves to meeting flow, stage Google Docs files under `VAULT_ROOT/_raw/` and follow [references/MEETING-NOTES.md](./references/MEETING-NOTES.md) for YAML prepend + `mv` placement.
 

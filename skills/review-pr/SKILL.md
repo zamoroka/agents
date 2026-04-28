@@ -1,6 +1,7 @@
 ---
 name: review-pr
 description: "Reviews Bitbucket pull requests, summarizes diffs, and produces a full review artifact. Use when the user asks to review a PR, inspect PR changes, or run a pull request code review."
+allowed-tools: read, grep, glob, pr-fetch, jira-mcp, magento2-lsp-mcp
 metadata:
   version: "2.1.7"
   category: "engineering"
@@ -16,14 +17,15 @@ Review a pull request. Findings are displayed in the terminal and saved as artif
 - Only call a tool if it is required to complete the task. Every tool call should have a clear purpose.
 - Prefer execution-first flow: run the primary command first, then remediate failures (missing file/dir/dependency/env) from actual errors instead of doing broad pre-check passes.
 
-## Shared runtime fallback (Node 25)
+## Shared runtime fallback
 
 If default Node is older than 18 and a fetch step fails with `fetch is not defined`, use Node 25 wrappers from the workspace directory:
 
 - PR fetch (run in `~/.agents/skills/review-pr/scripts/pr-fetch`):
   - `PROJECT_ROOT="{PROJECT_ROOT}" npx -y node@25 --loader ts-node/esm src/function.ts bitbucket {PR_URL}`
-- Jira MCP server (run in `~/.agents/mcp/jira-mcp`):
-  - `PROJECT_ROOT="{PROJECT_ROOT}" npx -y node@25 --loader ts-node/esm src/function.ts`
+- Jira tools:
+  - Use connected `jira-mcp` MCP server first.
+  - If not connected/unavailable, use `direct-tool-call` skill to call the server tools
 
 Dependency note for fetch steps:
 - Assume dependencies are already installed.
@@ -130,7 +132,7 @@ Jira ticket: {ISSUE_KEY}
 
 If artifact write fails because the directory does not exist, create `$PROJECT_ROOT/.agents/artifacts/` and retry.
 
-If needed, use the shared Node 25 fallback above to start `jira-mcp`.
+If needed, use the shared fallback above (`jira-mcp` connected first; direct-call workaround only if unavailable).
 
 ---
 
@@ -160,7 +162,7 @@ Environment note:
 
 For `magento2`, the summarizer and review agents must call Magento MCP tools for changed PHP/XML areas to validate merged Magento behavior (DI preferences/plugins, event observers, template/layout wiring, config-driven behavior) instead of relying on raw file reading alone.
 
-See `./shared/magento2-lsp-mcp-usage.md` for the expected evidence workflow.
+See [magento2-lsp-mcp-usage.md](./references/magento2-lsp-mcp-usage.md) for the expected evidence workflow.
 
 If `PROJECT_TYPE=unknown`, continue without LSP/MCP enrichment.
 
@@ -230,6 +232,15 @@ Save output to one file:
 
 Report format:
 
+### What
+One sentence explaining what this PR does. And what was requested in the Jira issue if applicable.
+
+### Changes
+- Bullet points of specific changes made
+- Group related changes together
+- Mention any files deleted or renamed
+
+### Findings
 - If no issues: start with `✅ No issues found`
 - If issues exist: start with `⚠️ {N} issue(s) found`
 - Include a concise PR summary

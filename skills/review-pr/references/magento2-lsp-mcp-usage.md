@@ -1,10 +1,9 @@
 # magento2-lsp-mcp usage
-
-Use this guide during `review-pr` when `PROJECT_TYPE=magento2`. Use [direct-tool-call.mjs](../../../mcp/direct-tool-call.mjs) to query Magento behavior evidence from the MCP tools listed in the next section. This will help validate or refute Magento-specific claims about merged/system behavior that cannot be confidently assessed from raw diff text alone.
+Use this guide during `review-pr` when `PROJECT_TYPE=magento2`. Use `magento2-lsp-mcp` server to query Magento behavior evidence from the MCP tools listed in the next section. This will help validate or refute Magento-specific claims about merged/system behavior that cannot be confidently assessed from raw diff text alone.
 
 ## Purpose
 
-`magento2-lsp-mcp` is used to validate Magento behavior from merged/system perspective (DI wiring, plugin execution, observers, layout/template resolution, config-driven behavior), not only from raw diff text.
+`magento2-lsp-mcp` server is used to validate Magento behavior from merged/system perspective (DI wiring, plugin execution, observers, layout/template resolution, config-driven behavior), not only from raw diff text.
 
 ## Runtime assumptions
 
