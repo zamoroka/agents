@@ -101,11 +101,12 @@ Inputs:
 - `doc_url` (required): full Google Doc URL, for example:
   `https://docs.google.com/document/d/1Ai0foyGv-fx8oNS9jkbK4OcxZ6cjc9tmJqrDk1MPSKU/edit?tab=t.mwaoa1bc87zx`
 - `file_name` (optional): output file name (`.md` appended automatically if missing)
+- `output_dir` (optional): output directory path (defaults to `GOOGLE_DOCS_DOWNLOAD_DIR` / `./downloads`)
 
 Behavior:
 - Extracts `{fileId}` from URL
 - Downloads markdown export from Google Docs
-- Saves file into `./downloads` (or `GOOGLE_DOCS_DOWNLOAD_DIR`)
+- Saves file into `output_dir` when provided, otherwise into `./downloads` (or `GOOGLE_DOCS_DOWNLOAD_DIR`)
 - Returns absolute output path and downloaded character count
 
 ### `doc_markdown_output_tty`

@@ -23,12 +23,17 @@ class GoogleDocsTools(ToolRegistrar):
         settings = self.settings
 
         @mcp.tool()
-        async def doc_markdown_download(doc_url: str, file_name: str | None = None) -> str:
+        async def doc_markdown_download(
+            doc_url: str,
+            file_name: str | None = None,
+            output_dir: str | None = None,
+        ) -> str:
             """Download a Google Doc as markdown and save it locally.
 
             Args:
                 doc_url: Google Doc URL, e.g. https://docs.google.com/document/d/{fileId}/edit
                 file_name: Optional output file name. Defaults to {fileId}.md
+                output_dir: Optional output directory. Defaults to configured download directory
             """
             try:
                 file_id = extract_document_id(doc_url)
@@ -44,7 +49,9 @@ class GoogleDocsTools(ToolRegistrar):
             normalized_name = file_name.strip() if file_name else f"{file_id}.md"
             if not normalized_name.endswith(".md"):
                 normalized_name = f"{normalized_name}.md"
-            output_path = (Path(settings.download_dir) / normalized_name).resolve()
+
+            target_dir = Path(output_dir).expanduser() if output_dir else Path(settings.download_dir)
+            output_path = (target_dir / normalized_name).resolve()
 
             save_markdown(markdown_text=markdown_text, output_path=output_path)
             return (
