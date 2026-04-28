@@ -1,7 +1,7 @@
 ---
 name: obsidian-note
-version: 2.1.0
-description: "Obsidian: Create or update any wiki page from markdown or plain text input."
+version: 2.2.0
+description: "Obsidian: Create or update any wiki page from markdown/plain text, including Google Doc URL ingestion for meeting notes."
 metadata:
   category: "productivity"
 ---
@@ -25,6 +25,7 @@ Invoke this skill when the user wants to:
 - Capture a note, idea, or piece of information
 - Save a personal reflection, dev tip, or work note
 - Update an existing wiki page with new content
+- Save notes from a Google Doc URL (especially meeting notes/transcripts)
 - "Make a note of…", "Add to my notes…", "Write this down…"
 - View their todo/task list — "what's on my todo?", "show my tasks", "what do I need to do?"
 - Save content exactly as-is with "raw", "just save it", "don't rewrite", "no changes" — triggers **raw mode**
@@ -70,6 +71,31 @@ Check for meeting signals in the content:
 - User explicitly calls it a "meeting note" or "transcript"
 
 **If any of these signals are present → stop and invoke the `obsidian-meeting-manage` skill instead.** Do not process the content further here.
+
+---
+
+### Step 2a — Google Doc URL ingestion (before delegation decision)
+
+If the user input includes one or more Google Docs URLs (for example `https://docs.google.com/document/d/...`):
+
+1. Download each doc as markdown by calling MCP tool `doc_markdown_download` with:
+   - `doc_url`: the exact URL from user input
+2. If MCP tool is unavailable/unconfigured, use direct call fallback:
+   ```bash
+   node /Users/zamoroka_pavlo/.agents/mcp/direct-tool-call.mjs \
+     --server-command uv \
+     --server-args '["--directory","/Users/zamoroka_pavlo/.agents/mcp/google-drive-mcp","run","google-drive-mcp"]' \
+     --cwd /Users/zamoroka_pavlo/.agents/mcp/google-drive-mcp \
+     --sdk-dir /Users/zamoroka_pavlo/.agents/mcp/jira-mcp/node_modules/@modelcontextprotocol/sdk \
+     --tool doc_markdown_download \
+     --args '{"doc_url":"<DOC_URL>"}'
+   ```
+3. Read downloaded markdown content and treat it as the canonical input content.
+4. Continue normal mode flow starting from meeting detection/delegation using this fetched content.
+
+When URL content is meeting-related, delegate to `obsidian-meeting-manage` and pass:
+- fetched markdown content (verbatim)
+- source URL(s)
 
 ---
 
