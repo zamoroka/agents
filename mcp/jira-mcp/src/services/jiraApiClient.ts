@@ -1,6 +1,15 @@
 import { request as httpRequest } from 'node:http';
 import { request as httpsRequest } from 'node:https';
-import type { JiraAuthType, JiraIssue, JiraIssueWorklogPage, JiraSearchResult, JiraUser, JiraWorklog } from '../types/index.js';
+import type {
+  JiraAuthType,
+  JiraIssue,
+  JiraIssueComment,
+  JiraIssueCommentPage,
+  JiraIssueWorklogPage,
+  JiraSearchResult,
+  JiraUser,
+  JiraWorklog,
+} from '../types/index.js';
 
 const normalizeBaseUrl = (value: string): string => value.replace(/\/$/, '');
 
@@ -63,11 +72,11 @@ const requestJson = async <T>({
         headers,
       },
       (response) => {
-        let body = '';
+        let responseBody = '';
 
         response.setEncoding('utf8');
         response.on('data', (chunk) => {
-          body += chunk;
+          responseBody += chunk;
         });
         response.on('end', () => {
           const statusCode = response.statusCode ?? 0;
@@ -84,12 +93,12 @@ const requestJson = async <T>({
           }
 
           if (statusCode < 200 || statusCode >= 300) {
-            reject(new JiraHttpError(`Jira issue fetch failed: ${statusCode} ${response.statusMessage || ''} ${body}`.trim(), statusCode));
+            reject(new JiraHttpError(`Jira issue fetch failed: ${statusCode} ${response.statusMessage || ''} ${responseBody}`.trim(), statusCode));
             return;
           }
 
           try {
-            resolve(JSON.parse(body) as T);
+            resolve(JSON.parse(responseBody) as T);
           } catch (error) {
             reject(new Error(`Failed to parse Jira response JSON: ${error instanceof Error ? error.message : String(error)}`));
           }
@@ -194,7 +203,76 @@ const fetchJiraWithAuth = async <T>({
 
 export const getJiraIssue = async ({ baseUrl, issueKey, token, email, jiraAuthType }: GetJiraIssueInput): Promise<JiraIssue> => {
   const url = new URL(`${normalizeBaseUrl(baseUrl)}/rest/api/2/issue/${encodeURIComponent(issueKey)}?expand=renderedFields`);
-  return fetchJiraWithAuth<JiraIssue>({ url, token, email, jiraAuthType });
+  const issue = await fetchJiraWithAuth<JiraIssue>({ url, token, email, jiraAuthType });
+  const comments = await getAllJiraIssueComments({ baseUrl, issueKey, token, email, jiraAuthType });
+
+  issue.fields = issue.fields || {};
+  issue.fields.comment = {
+    startAt: 0,
+    maxResults: comments.length,
+    total: comments.length,
+    comments,
+  };
+
+  return issue;
+};
+
+const getJiraIssueCommentsPage = async ({
+  baseUrl,
+  issueKey,
+  token,
+  email,
+  jiraAuthType,
+  startAt,
+  maxResults,
+}: {
+  baseUrl: string;
+  issueKey: string;
+} & JiraAuthInput & JiraPaginatedInput): Promise<JiraIssueCommentPage> => {
+  const url = new URL(`${normalizeBaseUrl(baseUrl)}/rest/api/2/issue/${encodeURIComponent(issueKey)}/comment`);
+  url.searchParams.set('maxResults', String(maxResults ?? 100));
+  url.searchParams.set('startAt', String(startAt ?? 0));
+
+  return fetchJiraWithAuth<JiraIssueCommentPage>({ url, token, email, jiraAuthType });
+};
+
+const getAllJiraIssueComments = async ({
+  baseUrl,
+  issueKey,
+  token,
+  email,
+  jiraAuthType,
+}: {
+  baseUrl: string;
+  issueKey: string;
+} & JiraAuthInput): Promise<JiraIssueComment[]> => {
+  const maxResults = 100;
+  const comments: JiraIssueComment[] = [];
+  let startAt = 0;
+
+  while (true) {
+    const page = await getJiraIssueCommentsPage({
+      baseUrl,
+      issueKey,
+      token,
+      email,
+      jiraAuthType,
+      startAt,
+      maxResults,
+    });
+
+    const pageComments = page.comments || [];
+    comments.push(...pageComments);
+
+    const total = page.total ?? comments.length;
+    startAt += pageComments.length;
+
+    if (pageComments.length === 0 || startAt >= total) {
+      break;
+    }
+  }
+
+  return comments;
 };
 
 export const getCurrentJiraUser = async ({

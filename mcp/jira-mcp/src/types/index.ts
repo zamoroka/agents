@@ -30,12 +30,10 @@ export type JiraIssue = {
     components?: Array<{ name?: string }>;
     fixVersions?: Array<{ name?: string }>;
     comment?: {
-      comments?: Array<{
-        author?: { displayName?: string };
-        created?: string;
-        body?: string;
-        renderedBody?: string;
-      }>;
+      startAt?: number;
+      maxResults?: number;
+      total?: number;
+      comments?: JiraIssueComment[];
     };
     attachment?: Array<{
       filename?: string;
@@ -45,6 +43,14 @@ export type JiraIssue = {
       content?: string;
     }>;
   };
+};
+
+export type JiraIssueComment = {
+  id?: string;
+  author?: { displayName?: string };
+  created?: string;
+  body?: string;
+  renderedBody?: string;
 };
 
 export type JiraUser = {
@@ -85,4 +91,11 @@ export type JiraIssueWorklogPage = {
   maxResults?: number;
   total?: number;
   worklogs?: JiraWorklog[];
+};
+
+export type JiraIssueCommentPage = {
+  startAt?: number;
+  maxResults?: number;
+  total?: number;
+  comments?: JiraIssueComment[];
 };
