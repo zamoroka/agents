@@ -1,6 +1,6 @@
 ---
 name: obsidian-note
-version: 2.0.0
+version: 2.1.0
 description: "Obsidian: Create or update any wiki page from markdown or plain text input."
 metadata:
   category: "productivity"
@@ -9,6 +9,10 @@ metadata:
 # obsidian-note
 
 Create or update any wiki page in the Obsidian vault. Automatically determines the correct folder, derives tags, detects duplicates, builds wiki-links to related pages, and delegates meeting notes to the `obsidian-meeting-manage` skill.
+
+Supports two modes:
+- **Normal mode** (default) — full processing: folder placement, tags, wiki-links, impersonation, structure matching.
+- **Raw mode** — minimal processing: place input text as-is in the correct folder, prepend a YAML frontmatter header with tags only. No rewriting, no wiki-links, no impersonation.
 
 ## Vault context
 
@@ -23,6 +27,7 @@ Invoke this skill when the user wants to:
 - Update an existing wiki page with new content
 - "Make a note of…", "Add to my notes…", "Write this down…"
 - View their todo/task list — "what's on my todo?", "show my tasks", "what do I need to do?"
+- Save content exactly as-is with "raw", "just save it", "don't rewrite", "no changes" — triggers **raw mode**
 
 > **Do NOT use for meeting notes/transcripts** — those are handled by `obsidian-meeting-manage`.
 
@@ -31,6 +36,15 @@ Invoke this skill when the user wants to:
 ## Instructions
 
 Follow these steps precisely when this skill is invoked.
+
+### Mode detection
+
+Check for raw mode signals **before** any other step:
+- User says "raw", "as-is", "verbatim", "just save it", "don't rewrite", "no changes", "don't modify"
+
+**If raw mode is detected → follow [Raw Mode](#raw-mode) steps below instead of the normal flow.**
+
+---
 
 ### Command usage policy
 
@@ -183,6 +197,55 @@ Report:
 
 ---
 
+## Raw Mode
+
+Triggered by: "raw", "as-is", "verbatim", "just save it", "don't rewrite", "no changes", "don't modify".
+
+**Goal:** place input text into the correct folder untouched, with only a YAML frontmatter header prepended. No rewriting, no wiki-links, no impersonation, no structure matching.
+
+### Raw Mode Steps
+
+**R1 — Gather input**
+If no content was provided, ask: *"Please paste the content and I'll save it as-is."*
+
+**R2 — Detect meeting note → delegate**
+Same check as Step 2 of normal mode. If meeting signals found, delegate to `obsidian-meeting-manage`.
+
+**R3 — Load vault context**
+```bash
+cat "VAULT_ROOT/AGENTS.md"
+```
+
+**R4 — Determine folder and title**
+Use the Persona 3 Decision Flow from AGENTS.md to pick the correct folder. Derive a concise filename from the content title or first line.
+
+**R5 — Derive tags**
+Apply folder-based mandatory tags + up to 3 content-based tags per Tagging Rules in AGENTS.md.
+
+**R6 — Confirm with user**
+*"I'll save the content as-is to `<path>` with tags: `<tags>`. No changes to the text. Proceed?"*
+Wait for confirmation.
+
+**R7 — Write the file**
+Create the file with:
+1. YAML frontmatter block:
+   ```yaml
+   ---
+   tags: [<tags>]
+   created: <current datetime>
+   ---
+   ```
+2. The input text appended verbatim after the frontmatter — **no modifications whatsoever**.
+
+Do **not** invoke the impersonator skill. Do **not** add wiki-links. Do **not** reformat or restructure the content.
+
+**R8 — Confirm**
+- ✅ Page created: full file path
+- ✅ Tags applied: list them
+- Offer to open in Obsidian.
+
+---
+
 ## Wiki Audit
 
 See the **Lint / Audit** section in `AGENTS.md` for full audit instructions.
@@ -231,6 +294,10 @@ Load and follow the dedicated [todo-report.md](./todo-report.md) instructions on
 **Todo report:**
 > User: *"What's on my todo?"*
 > Skill: runs `obsidian tasks todo`, filters/groups/sorts the output, renders the report
+
+**Raw mode:**
+> User: *"Save this raw, don't change anything: ..."*
+> Skill: detects raw mode → determines folder → asks confirmation → creates file with frontmatter header + verbatim content
 
 **Contradiction found:**
 > Skill: *"I found a conflict: `Work/Dev notes/Redis.md` says we're not using Redis in ARB, but the new content says Redis is active. Which is correct?"*

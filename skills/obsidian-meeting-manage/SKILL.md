@@ -1,14 +1,14 @@
 ---
 name: obsidian-meeting-manage
 version: 2.0.0
-description: "Obsidian: Add or update a Vaimo meeting wiki page with auto-tagging, wiki-linking, and task extraction."
+description: "Obsidian: Add or update a meeting transcript wiki page with auto-tagging, wiki-linking, and task extraction."
 metadata:
   category: "productivity"
 ---
 
 # obsidian-meeting-manage
 
-Create or update a Vaimo meeting wiki page in the Obsidian vault. Automatically derives tags, detects duplicates, builds wiki-links to related pages, and extracts action items into the relevant project's TASKS.md.
+Create or update a meeting transcript wiki page in the Obsidian vault. Automatically derives tags, detects duplicates, builds wiki-links to related pages, and extracts action items into the relevant project's TASKS.md.
 
 ## Vault context
 
@@ -97,33 +97,15 @@ Wait for confirmation before writing.
 
 ### Step 7 — Create or update the page
 
-Invoke the `impersonator` skill before writing content.
-
-Use the **Wiki Page Format** from AGENTS.md for YAML frontmatter. The meeting-specific body structure is:
-
-```markdown
-<Weekday>, <DD> <Mon> <YY> · <email or identifier of external participant if known>
-
-### <Topic 1>
-
-- Key point
-- Key point
-
-### <Topic 2>
-
-- Key point
-
-### Next Steps
-
-- <Person>
-    - <Action item>
-```
+> **Raw mode is always used when the user provides a meeting transcript.** Do NOT invoke the `impersonator` skill, do NOT rewrite or restructure the transcript content, do NOT add wiki-links inside the body text.
 
 **File path:** `Work/Vaimo/Meeting notes/YYYY.MM.DD <Title>.md` (see naming convention in Vault context above).
 
-Create/update the markdown file directly at the vault path. If CLI create is used for speed, treat it as a scaffold and still finalize content via direct file edit.
+Write the file as:
+1. YAML frontmatter only (tags, created, updated, related, summary) — per **Wiki Page Format** in AGENTS.md.
+2. The transcript content appended **verbatim** after the frontmatter — no modifications whatsoever.
 
-**For updates:** Read the existing file, merge new sections intelligently. Do not duplicate existing content. Append to `### Next Steps` or create it if missing. Update `updated` timestamp.
+**For updates:** Read the existing file, merge new sections intelligently. Do not duplicate existing content. Update `updated` timestamp.
 
 ### Step 8 — Update TASKS.md
 
