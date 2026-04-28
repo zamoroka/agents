@@ -1,3 +1,6 @@
 [submodule "mcp/chrome-devtools-mcp"]
 	path = mcp/chrome-devtools-mcp
 	url = https://github.com/ChromeDevTools/chrome-devtools-mcp
+[submodule "mcp/magento2-lsp"]
+	path = mcp/magento2-lsp
+	url = https://github.com/mage-os-lab/magento2-lsp
