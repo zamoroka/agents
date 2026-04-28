@@ -65,7 +65,10 @@ Use 1-2 additional searches for aliases/date variants.
 Target root is always:
 `Work/Vaimo/Meeting notes/`
 
-Before writing, propose:
+Before writing, provide a very short meeting summary first (2-4 bullets) with the most important discussion points.
+For this summary only, use `kevin-mode` communication style (very terse, high-signal phrasing).
+
+Then propose:
 1. suggested subfolder
 2. short rationale
 3. 1-3 alternatives
@@ -101,11 +104,16 @@ Add when detected:
 
 ## Step 7 — Confirm write plan
 
-Before any write, confirm:
+Default rule before any write, confirm:
 - target path
 - create or update action
 - tags
 - related pages summary
+
+Meeting-note approval shortcut:
+- if the user explicitly approves the proposed meeting-note filename/path, treat that as write approval for the meeting note file
+- do not ask for an extra write-permission confirmation
+- still stop and ask if contradictions were detected in Step 5
 
 ## Step 8 — Write/update meeting page
 
@@ -116,6 +124,7 @@ Rules:
 - do not invoke `impersonator` for meeting transcripts
 - keep transcript body raw except checklist normalization
 - frontmatter follows `AGENTS.md` wiki format (`tags`, `created`, `updated`, `related`, `summary`)
+- when content was imported from a Google Docs URL, add a `source` YAML property with the original document URL
 - for updates, read existing file first and merge without duplication
 
 Google Docs create flow (must use `mv`):
@@ -153,3 +162,11 @@ Report:
 - related pages linked
 
 Optionally offer to open the page in Obsidian.
+
+## Recovery rule — note saved too early
+
+If a meeting note is accidentally saved before subfolder approval:
+
+1. Immediately print a short `kevin-mode` summary of the most important discussed points (2-4 bullets).
+2. Ask user to confirm if current folder is correct.
+3. If folder is wrong, move the file to the approved folder and confirm final path.

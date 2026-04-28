@@ -1,6 +1,6 @@
 ---
 name: obsidian-note
-description: "Obsidian: Create or update any wiki page, including meeting notes and todo reports, with vault-aware placement, tagging, linking, and optional raw mode."
+description: "Obsidian: Creates or updates vault pages (notes, meetings, and todo reports), imports Google Docs markdown, and can save content verbatim in raw mode. Use for note capture, transcript handling, or task-report requests."
 metadata:
   category: "productivity"
   version: "3.0.1"
@@ -24,6 +24,11 @@ Invoke this skill when the user wants to:
 - view their todo/task report
 - save content exactly as-is (`raw`, `as-is`, `verbatim`, `don't rewrite`)
 
+Examples:
+- "Save this Google Doc as a note."
+- "Create notes from this standup transcript."
+- "Show what is on my todo list."
+
 ## Modes
 
 - **Normal mode (default):** full processing with placement, duplicate detection, related pages, wiki-links, and structure matching.
@@ -45,6 +50,9 @@ If input includes Google Docs URLs (`https://docs.google.com/document/d/...`):
 Tool policy for note ingestion:
 - Always use `doc_markdown_download` for Google Docs note/meeting imports.
 - Never use `doc_markdown_output_tty` for this workflow because it does not persist files into the vault `_raw` staging directory.
+
+Prompt mapping guard:
+- If user says `save meeting notes from this google doc` (or close variant), force Google Docs meeting flow: download via `doc_markdown_download` to `VAULT_ROOT/_raw`, then continue meeting workflow.
 
 1. Download each document as markdown via MCP tool `doc_markdown_download` with:
    - `doc_url`: source Google Doc URL
