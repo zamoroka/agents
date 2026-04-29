@@ -12,7 +12,6 @@ Use this skill as a **fallback only** when a live MCP server tool is unavailable
 | Runtime | Path |
 |---|---|
 | Python (uv) | `~/.agents/skills/direct-tool-call/direct-tool-call.py` |
-| Node.js | `~/.agents/skills/direct-tool-call/direct-tool-call.mjs` |
 
 **Prefer the Python script** — it has no local SDK dependency and runs fully self-contained via `uv`.
 
@@ -27,33 +26,35 @@ uv run ~/.agents/skills/direct-tool-call/direct-tool-call.py \
   --args '<json>'
 ```
 
-### Defaults (Jira MCP)
+> All three flags (`--server-command`, `--server-args`, `--cwd`) are required. Look them up in
+> `~/.agents/skills/direct-tool-call/mcp-config.json` before running the script (see below).
 
-| Flag | Default |
-|---|---|
-| `--server-command` | `node` |
-| `--server-args` | `["dist/function.js"]` |
-| `--cwd` | `~/.agents/mcp/jira-mcp` |
+## Resolving server flags from `mcp-config.json`
 
-## Known servers (`mcp-config.json`)
+**Always read `~/.agents/skills/direct-tool-call/mcp-config.json` first** to get the correct
+`command`, `args`, and working directory for the target server.
 
-Config: `~/.agents/skills/direct-tool-call/mcp-config.json`
+| `mcpServers` key | `--server-command` | `--server-args`                                                                                 | `--cwd` |
+|---|---|-------------------------------------------------------------------------------------------------|---|
+| `jira` | `node` | `["~/.agents/mcp/jira-mcp/dist/function.js"]`                                                   | `~/.agents/mcp/jira-mcp` |
+| `chrome-devtools` | `npx` | `["-y","chrome-devtools-mcp@latest"]`                                                           | _(any)_ |
+| `google-drive` | `uv` | `["--directory","~/.agents/mcp/google-drive-mcp","run","google-drive-mcp"]` | `~/.agents/mcp/google-drive-mcp` |
+| `magento2-lsp-mcp` | `magento2-lsp-mcp` | `[]`                                                                                            | _(any)_ |
 
-| Server key | command | args |
-|---|---|---|
-| `jira` | `node` | `/Users/zamoroka_pavlo/.agents/mcp/jira-mcp/dist/function.js` |
-| `chrome-devtools` | `npx` | `-y chrome-devtools-mcp@latest` |
-| `google-drive` | `uv` | `--directory /Users/zamoroka_pavlo/.agents/mcp/google-drive-mcp run google-drive-mcp` |
-| `magento2-lsp-mcp` | `magento2-lsp-mcp` | _(none)_ |
-
-Translate the config entry directly into `--server-command` / `--server-args` / `--cwd` flags.
+**Mapping rules:**
+- `command` → `--server-command`
+- `args` → `--server-args` (pass as a JSON array string)
+- For servers whose args contain an absolute path to a file or `--directory <path>`, use that directory as `--cwd`. For servers with no local path (e.g. `npx`), you may pass any writable directory (e.g. `/tmp`).
 
 ## Examples
 
-**Jira** (uses all defaults):
+**Jira:**
 
 ```bash
 uv run ~/.agents/skills/direct-tool-call/direct-tool-call.py \
+  --server-command node \
+  --server-args '["~/.agents/mcp/jira-mcp/dist/function.js"]' \
+  --cwd ~/.agents/mcp/jira-mcp \
   --tool fetch_jira_issue_details \
   --args '{"issueKey":"SUNNYR-64"}'
 ```
@@ -64,6 +65,7 @@ uv run ~/.agents/skills/direct-tool-call/direct-tool-call.py \
 uv run ~/.agents/skills/direct-tool-call/direct-tool-call.py \
   --server-command npx \
   --server-args '["-y","chrome-devtools-mcp@latest"]' \
+  --cwd /tmp \
   --tool list_pages \
   --args '{}'
 ```
@@ -74,6 +76,7 @@ uv run ~/.agents/skills/direct-tool-call/direct-tool-call.py \
 uv run ~/.agents/skills/direct-tool-call/direct-tool-call.py \
   --server-command npx \
   --server-args '["-y","chrome-devtools-mcp@latest"]' \
+  --cwd /tmp \
   --tool new_page \
   --args '{"url":"https://google.com","timeout":60000}'
 ```
@@ -83,7 +86,8 @@ uv run ~/.agents/skills/direct-tool-call/direct-tool-call.py \
 ```bash
 uv run ~/.agents/skills/direct-tool-call/direct-tool-call.py \
   --server-command uv \
-  --server-args '["--directory","/Users/zamoroka_pavlo/.agents/mcp/google-drive-mcp","run","google-drive-mcp"]' \
+  --server-args '["--directory","~/.agents/mcp/google-drive-mcp","run","google-drive-mcp"]' \
+  --cwd ~/.agents/mcp/google-drive-mcp \
   --tool '<tool_name>' \
   --args '{}'
 ```
@@ -94,6 +98,7 @@ uv run ~/.agents/skills/direct-tool-call/direct-tool-call.py \
 uv run ~/.agents/skills/direct-tool-call/direct-tool-call.py \
   --server-command magento2-lsp-mcp \
   --server-args '[]' \
+  --cwd /tmp \
   --tool '<tool_name>' \
   --args '{}'
 ```

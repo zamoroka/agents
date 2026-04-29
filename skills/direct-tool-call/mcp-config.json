@@ -8,14 +8,14 @@
       "command": "uv",
       "args": [
         "--directory",
-        "/Users/zamoroka_pavlo/.agents/mcp/google-drive-mcp",
+        "~/.agents/mcp/google-drive-mcp",
         "run",
         "google-drive-mcp"
       ]
     },
     "jira": {
       "command": "node",
-      "args": ["/Users/zamoroka_pavlo/.agents/mcp/jira-mcp/dist/function.js"]
+      "args": ["~/.agents/mcp/jira-mcp/dist/function.js"]
     },
     "magento2-lsp-mcp": {
       "command": "magento2-lsp-mcp",

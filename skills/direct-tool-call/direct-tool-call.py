@@ -6,21 +6,17 @@
 # ]
 # ///
 """
-Direct MCP tool caller — Python/uv port of direct-tool-call.mjs
-
 Usage:
   uv run ~/.agents/skills/direct-tool-call/direct-tool-call.py \\
-    --tool <tool_name> [--args '<json>'] \\
-    [--server-command '<cmd>'] [--server-args '<json-array>'] [--cwd '<path>']
-
-Defaults (Jira MCP):
-  --server-command  node
-  --server-args     ["dist/function.js"]
-  --cwd             ~/.agents/mcp/jira-mcp
+    --server-command '<cmd>' --server-args '<json-array>' --cwd '<path>' \\
+    --tool <tool_name> [--args '<json>']
 
 Examples:
-  # Jira (all defaults)
+  # Jira
   uv run ~/.agents/skills/direct-tool-call/direct-tool-call.py \\
+    --server-command node \\
+    --server-args '["dist/function.js"]' \\
+    --cwd ~/.agents/mcp/jira-mcp \\
     --tool fetch_jira_issue_details --args '{"issueKey":"SUNNYR-64"}'
 
   # Chrome DevTools
@@ -46,9 +42,6 @@ from pathlib import Path
 from mcp import ClientSession
 from mcp.client.stdio import StdioServerParameters, stdio_client
 
-THIS_DIR = Path(__file__).parent
-DEFAULT_CWD = THIS_DIR.parent.parent / "mcp" / "jira-mcp"
-
 
 def expand(p: str) -> Path:
     return Path(p).expanduser().resolve()
@@ -61,16 +54,16 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--tool", required=True, help="Tool name to call")
     parser.add_argument("--args", default="{}", help="JSON object of tool arguments")
-    parser.add_argument("--server-command", default="node", help="Server executable (default: node)")
+    parser.add_argument("--server-command", required=True, help="Server executable")
     parser.add_argument(
         "--server-args",
-        default='["dist/function.js"]',
-        help='JSON array of server arguments (default: ["dist/function.js"])',
+        required=True,
+        help="JSON array of server arguments",
     )
     parser.add_argument(
         "--cwd",
-        default=str(DEFAULT_CWD),
-        help=f"Working directory for the server process (default: {DEFAULT_CWD})",
+        required=True,
+        help="Working directory for the server process",
     )
     return parser.parse_args()
 
