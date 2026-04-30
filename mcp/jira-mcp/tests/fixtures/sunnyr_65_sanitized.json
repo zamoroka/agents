@@ -1,7 +1,8 @@
 {
-  "key": "SWISSSP-168",
+  "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+  "key": "SUNNYR-65",
   "id": "7389694",
-  "self": "https://jira.example.invalid/rest/api/2/issue/7389694",
+  "self": "https://jira.example.invalid/rest/api/2/issue/SUNNYR-65",
   "fields": {
     "summary": "[Alert] PLP to Checkout flow failure",
     "status": {
@@ -25,6 +26,23 @@
       "incident_alert",
       "support_team"
     ],
+    "issuelinks": [
+      {
+        "id": "link-1",
+        "type": {
+          "name": "Blocks",
+          "outward": "blocks",
+          "inward": "is blocked by"
+        },
+        "outwardIssue": {
+          "id": "7000001",
+          "key": "SUNNYR-7",
+          "fields": {
+            "summary": "Upgrade hosting environment"
+          }
+        }
+      }
+    ],
     "components": [
       {
         "name": "Checkout"
@@ -42,26 +60,55 @@
         "content": "https://jira.example.invalid/secure/attachment/att-1/incident-screenshot.png"
       }
     ],
+    "worklog": {
+      "startAt": 0,
+      "maxResults": 20,
+      "total": 1,
+      "worklogs": [
+        {
+          "id": "w-1",
+          "comment": "<p>Investigated installation issue</p>",
+          "created": "2026-01-13 18:47",
+          "updated": "2026-01-13 18:47",
+          "started": "2026-01-12 20:47",
+          "timeSpent": "2h"
+        }
+      ]
+    },
     "comment": {
       "startAt": 0,
       "maxResults": 2,
       "total": 2,
       "comments": [
         {
+          "self": "https://jira.example.invalid/rest/api/2/issue/SUNNYR-65/comment/c-1",
           "id": "c-1",
           "author": {
             "displayName": "Support Bot"
           },
+          "updateAuthor": {
+            "displayName": "Support Bot"
+          },
           "created": "2026-04-30T12:48:07.000+0000",
+          "updated": "2026-04-30T12:48:07.000+0000",
           "body": "Investigation in progress",
           "renderedBody": "<p>Investigation in progress</p>"
         },
         {
+          "self": "https://jira.example.invalid/rest/api/2/issue/SUNNYR-65/comment/c-2",
           "id": "c-2",
           "author": {
             "displayName": "On-call Engineer"
           },
+          "updateAuthor": {
+            "displayName": "On-call Engineer"
+          },
           "created": "2026-04-30T13:15:20.000+0000",
+          "updated": "2026-04-30T13:16:20.000+0000",
+          "visibility": {
+            "type": "role",
+            "value": "Developers"
+          },
           "body": {
             "type": "doc",
             "version": 1,
@@ -92,6 +139,28 @@
     }
   },
   "renderedFields": {
-    "description": "<p>Critical priority issue is active.</p>"
+    "description": "<p>Critical priority issue is active.</p>",
+    "comment": {
+      "comments": [
+        {
+          "id": "c-1",
+          "body": "<p>Investigation in progress</p>"
+        }
+      ],
+      "maxResults": 1000,
+      "total": 2,
+      "startAt": 0
+    },
+    "worklog": {
+      "worklogs": [
+        {
+          "id": "w-1",
+          "comment": "<p>Investigated installation issue</p>"
+        }
+      ],
+      "maxResults": 20,
+      "total": 1,
+      "startAt": 0
+    }
   }
 }

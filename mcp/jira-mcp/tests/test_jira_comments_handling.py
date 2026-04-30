@@ -10,12 +10,13 @@ from jira_mcp.services.summarize_jira_issue import _build_payload, _build_user_p
 
 
 def _load_fixture() -> dict:
-    fixture_path = Path(__file__).parent / "fixtures" / "swisssp_168_sanitized.json"
+    fixture_path = Path(__file__).parent / "fixtures" / "sunnyr_65_sanitized.json"
     return json.loads(fixture_path.read_text(encoding="utf-8"))
 
 
 def test_get_jira_issue_fetches_all_comments_with_rendered_body(monkeypatch) -> None:
     fixture = _load_fixture()
+    issue_key = fixture["key"]
     comment_one, comment_two = fixture["fields"]["comment"]["comments"]
     captured_urls: list[str] = []
 
@@ -23,7 +24,7 @@ def test_get_jira_issue_fetches_all_comments_with_rendered_body(monkeypatch) -> 
         url = kwargs["url"]
         captured_urls.append(url)
 
-        if url.endswith("/rest/api/2/issue/SWISSSP-168?expand=renderedFields"):
+        if url.endswith(f"/rest/api/2/issue/{issue_key}?expand=renderedFields"):
             issue = {
                 "key": fixture["key"],
                 "id": fixture["id"],
@@ -38,7 +39,7 @@ def test_get_jira_issue_fetches_all_comments_with_rendered_body(monkeypatch) -> 
             return issue
 
         parsed = urlparse(url)
-        if parsed.path.endswith("/rest/api/2/issue/SWISSSP-168/comment"):
+        if parsed.path.endswith(f"/rest/api/2/issue/{issue_key}/comment"):
             params = parse_qs(parsed.query)
             start_at = int(params["startAt"][0])
             if start_at == 0:
@@ -53,7 +54,7 @@ def test_get_jira_issue_fetches_all_comments_with_rendered_body(monkeypatch) -> 
     issue = asyncio.run(
         jira_api_client.get_jira_issue(
             base_url="https://jira.example.invalid",
-            issue_key="SWISSSP-168",
+            issue_key=issue_key,
             token="token",
             email="",
             jira_auth_type="bearer",
@@ -68,7 +69,7 @@ def test_get_jira_issue_fetches_all_comments_with_rendered_body(monkeypatch) -> 
     comment_urls = [
         requested
         for requested in captured_urls
-        if "/rest/api/2/issue/SWISSSP-168/comment" in requested
+        if f"/rest/api/2/issue/{issue_key}/comment" in requested
     ]
     assert comment_urls
     for requested in comment_urls:
@@ -97,3 +98,27 @@ def test_user_prompt_explicitly_mentions_comments() -> None:
     prompt = _build_user_prompt(payload)
 
     assert "Explicitly account for issue comments" in prompt
+
+
+def test_build_payload_handles_visibility_and_extra_issue_fields() -> None:
+    fixture = _load_fixture()
+    comment = fixture["fields"]["comment"]["comments"][1]
+    assert comment["visibility"]["value"] == "Developers"
+
+    payload = _build_payload(fixture)
+
+    comments = payload["fields"]["comments"]
+    assert len(comments) == 2
+    assert comments[1]["author"] == "On-call Engineer"
+    assert comments[1]["text"] == "Cart is slower than usual\nCheckout otherwise works"
+    assert payload["fields"]["components"] == ["Checkout"]
+    assert payload["fields"]["attachments"][0]["filename"] == "incident-screenshot.png"
+
+
+def test_build_payload_prefers_fields_comment_over_rendered_fields_comment() -> None:
+    fixture = _load_fixture()
+    payload = _build_payload(fixture)
+
+    comments = payload["fields"]["comments"]
+    assert comments[0]["body"] == "Investigation in progress"
+    assert comments[0]["renderedBody"] == "<p>Investigation in progress</p>"
