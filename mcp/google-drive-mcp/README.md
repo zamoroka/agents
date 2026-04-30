@@ -93,6 +93,16 @@ If the command is not available in your shell, you can also run:
 uv run google-drive-mcp
 ```
 
+## Run MCP dev (inspector UI)
+
+To launch the [MCP Inspector](https://github.com/modelcontextprotocol/inspector) for interactive testing:
+
+```bash
+uv run mcp dev src/google_drive_mcp/server.py
+```
+
+This starts the server and opens the MCP Inspector in your browser, where you can browse and call tools manually.
+
 ## Tool
 
 ### `doc_markdown_download`

@@ -26,7 +26,7 @@ def build_markdown_export_url(file_id: str) -> str:
     return f"https://docs.google.com/document/d/{file_id}/export?format=md"
 
 
-async def download_doc_markdown(file_id: str, credentials: Credentials) -> str:
+async def export_doc_markdown(file_id: str, credentials: Credentials) -> str:
     export_url = build_markdown_export_url(file_id)
     headers = {"Authorization": f"Bearer {credentials.token}"}
     async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:

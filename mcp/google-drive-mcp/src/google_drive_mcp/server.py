@@ -26,6 +26,7 @@ def build_server() -> FastMCP:
 
     return mcp
 
+mcp = build_server()
 
 def main() -> None:
     configure_logging()

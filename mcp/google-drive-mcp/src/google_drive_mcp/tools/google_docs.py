@@ -8,7 +8,7 @@ from google_drive_mcp.auth.oauth import get_or_authorize
 from google_drive_mcp.config import Settings
 from google_drive_mcp.services.google_docs import (
     GoogleDocUrlError,
-    download_doc_markdown,
+    export_doc_markdown,
     extract_document_id,
     save_markdown,
 )
@@ -22,7 +22,10 @@ class GoogleDocsTools(ToolRegistrar):
     def register(self, mcp: FastMCP) -> None:
         settings = self.settings
 
-        @mcp.tool()
+        @mcp.tool(
+            name="doc_markdown_download",
+            description="Download a Google Doc as markdown and save it locally.",
+        )
         async def doc_markdown_download(
             doc_url: str,
             file_name: str | None = None,
@@ -44,7 +47,7 @@ class GoogleDocsTools(ToolRegistrar):
                 credentials_path=settings.credentials_path,
                 token_path=settings.token_path,
             )
-            markdown_text = await download_doc_markdown(file_id=file_id, credentials=credentials)
+            markdown_text = await export_doc_markdown(file_id=file_id, credentials=credentials)
 
             normalized_name = file_name.strip() if file_name else f"{file_id}.md"
             if not normalized_name.endswith(".md"):
@@ -59,7 +62,10 @@ class GoogleDocsTools(ToolRegistrar):
                 f"Characters: {len(markdown_text)}"
             )
 
-        @mcp.tool()
+        @mcp.tool(
+            name="doc_markdown_output_tty",
+            description="Fetch a Google Doc as markdown and return it to the MCP client output.",
+        )
         async def doc_markdown_output_tty(doc_url: str) -> str:
             """Fetch a Google Doc as markdown and return it to the MCP client output.
 
@@ -75,5 +81,5 @@ class GoogleDocsTools(ToolRegistrar):
                 credentials_path=settings.credentials_path,
                 token_path=settings.token_path,
             )
-            markdown_text = await download_doc_markdown(file_id=file_id, credentials=credentials)
+            markdown_text = await export_doc_markdown(file_id=file_id, credentials=credentials)
             return markdown_text
