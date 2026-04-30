@@ -7,7 +7,7 @@ MCP server that provides Jira tools for pull request workflows.
 - Python MCP SDK (`mcp[cli]`) with `FastMCP`
 - STDIO transport for desktop MCP client compatibility
 - `httpx` for Jira REST API calls
-- OpenAI SDK for issue summary generation
+- MCP Prompt for issue summary generation
 - Modular tool registration for easy extension
 
 ## Project structure
@@ -18,8 +18,7 @@ jira-mcp/
     services/
       jira_api_client.py       # Jira REST API client with auth fallback
       process_my_timelogs.py   # Timelog aggregation and markdown summary
-      process_issue_summary.py # Issue + LLM orchestration
-      summarize_jira_issue.py  # OpenAI markdown summary generation
+      summarize_jira_issue.py  # Jira summary prompt payload generation
     tools/
       base.py                  # ToolRegistrar abstraction
       jira.py                  # MCP tool implementations
@@ -32,7 +31,6 @@ jira-mcp/
 - Python 3.10+
 - `uv` recommended (or use pip/venv)
 - Jira API access (`JIRA_URL`, `JIRA_TOKEN`, optional `JIRA_EMAIL`)
-- OpenAI API key only if using `fetch_jira_issue_ai_summary`
 
 ## Setup
 
@@ -71,9 +69,9 @@ This starts the server and opens MCP Inspector in your browser so you can call t
 - `fetch_jira_issue_details`: fetches raw Jira issue details by key.
 - `fetch_jira_my_timelogs`: fetches current user timelogs for a rolling period and returns grouped report + markdown summary.
 - `add_jira_timelog`: adds a Jira worklog entry to an issue.
-- `fetch_jira_issue_ai_summary`: fetches issue details and returns an AI markdown summary.
+- `jira_issue_summary_prompt` (prompt): takes Jira issue JSON (for example output of `fetch_jira_issue_details`) and returns prompt messages for a Jira summary.
 
-All tools accept optional config overrides (`jiraBaseUrl`, `jiraApiToken`, `jiraEmail`, `jiraAuthType`), and AI summary also accepts `openaiApiKey`, `openaiModel`.
+All tools and prompts accept optional config overrides (`jiraBaseUrl`, `jiraApiToken`, `jiraEmail`, `jiraAuthType`).
 
 ## Environment file
 
@@ -87,8 +85,6 @@ JIRA_URL=
 JIRA_TOKEN=
 JIRA_EMAIL=
 JIRA_AUTH_TYPE=auto
-OPENAI_API_KEY=
-JIRA_SUMMARY_OPENAI_MODEL=gpt-5.4-nano
 ```
 
 Precedence:
@@ -122,9 +118,7 @@ Example `~/.mcp.json` entry:
         "JIRA_URL": "https://jira.example.com",
         "JIRA_TOKEN": "your_jira_token",
         "JIRA_EMAIL": "user@example.com",
-        "JIRA_AUTH_TYPE": "auto",
-        "OPENAI_API_KEY": "your_openai_api_key",
-        "JIRA_SUMMARY_OPENAI_MODEL": "gpt-5.4-nano"
+        "JIRA_AUTH_TYPE": "auto"
       }
     }
   }

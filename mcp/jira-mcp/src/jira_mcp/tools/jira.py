@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import json
+from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
 from jira_mcp.config import ConfigOverrides, load_settings
 from jira_mcp.services.jira_api_client import add_jira_issue_worklog, get_jira_issue
-from jira_mcp.services.process_issue_summary import process_issue_summary
 from jira_mcp.services.process_my_timelogs import process_my_timelogs
+from jira_mcp.services.summarize_jira_issue import build_summary_prompt_messages
 from jira_mcp.tools.base import ToolRegistrar
 
 
@@ -41,54 +42,23 @@ class JiraTools(ToolRegistrar):
             )
             return json.dumps(issue, indent=2)
 
-        @mcp.tool(
-            name="fetch_jira_issue_ai_summary",
-            description="Fetch Jira issue details and return an AI markdown summary.",
+        @mcp.prompt(
+            name="jira_issue_summary_prompt",
+            description="Build prompt messages from Jira issue JSON for code review summary.",
         )
-        async def fetch_jira_issue_ai_summary(
-            issueKey: str,
-            jiraBaseUrl: str | None = None,
-            jiraApiToken: str | None = None,
-            jiraEmail: str | None = None,
-            jiraAuthType: str | None = None,
-            openaiApiKey: str | None = None,
-            openaiModel: str | None = None,
-        ) -> str:
-            settings = load_settings(
-                ConfigOverrides(
-                    jira_base_url=jiraBaseUrl,
-                    jira_api_token=jiraApiToken,
-                    jira_email=jiraEmail,
-                    jira_auth_type=jiraAuthType,
-                    openai_api_key=openaiApiKey,
-                    openai_model=openaiModel,
-                )
-            )
+        async def jira_issue_summary_prompt(
+            jiraIssueJson: str,
+        ) -> list[dict[str, str]]:
+            try:
+                jira_issue: Any = json.loads(jiraIssueJson)
+            except json.JSONDecodeError as exc:
+                raise ValueError("Invalid jiraIssueJson. Pass JSON returned by fetch_jira_issue_details.") from exc
 
-            if not settings.openai_api_key:
-                raise ValueError(
-                    "Missing OPENAI_API_KEY. Set it in .env or pass openaiApiKey to the tool call."
-                )
+            if not isinstance(jira_issue, dict):
+                raise ValueError("Invalid jiraIssueJson. Expected a JSON object from fetch_jira_issue_details.")
 
-            result = await process_issue_summary(
-                issue_key=issueKey,
-                jira_base_url=settings.jira_base_url,
-                jira_api_token=settings.jira_api_token,
-                jira_email=settings.jira_email,
-                jira_auth_type=settings.jira_auth_type,
-                openai_api_key=settings.openai_api_key,
-                openai_model=settings.openai_model,
-            )
-
-            return json.dumps(
-                {
-                    "issueKey": (result["issue"].get("key") if isinstance(result["issue"], dict) else None)
-                    or issueKey,
-                    "model": settings.openai_model,
-                    "summary": result["summary"],
-                },
-                indent=2,
-            )
+            messages = build_summary_prompt_messages(jira_issue=jira_issue)
+            return [dict(message) for message in messages if isinstance(message, dict)]
 
         @mcp.tool(
             name="add_jira_timelog",

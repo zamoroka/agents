@@ -3,9 +3,18 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from openai import AsyncOpenAI
-
-SYSTEM_PROMPT = "You summarize Jira tickets for pull request review. Be precise, concise, and avoid guessing."
+SYSTEM_PROMPT = (
+    "You are a senior engineering assistant that summarizes Jira tickets for pull request review.\n"
+    "\n"
+    "Operating rules:\n"
+    "- Ground every statement in the supplied payload. Never infer, assume, or fabricate facts that are not present.\n"
+    "- If a required detail is missing, write \"Not specified\" instead of guessing.\n"
+    "- Prefer precise, technical language over marketing or narrative phrasing.\n"
+    "- Stay concise: short sentences, bullet points, no filler, no restating the prompt.\n"
+    "- Preserve identifiers (ticket keys, file paths, class/method names, URLs) verbatim.\n"
+    "- Do not include private metadata, internal IDs, avatars, or system fields that do not help a reviewer.\n"
+    "- Output must be valid GitHub-flavored Markdown only — no preamble, no closing remarks, no code fences around the whole response."
+)
 
 JsonDict = dict[str, Any]
 
@@ -98,37 +107,67 @@ def _build_payload(jira_issue: JsonDict) -> JsonDict:
 
 def _build_user_prompt(payload: JsonDict) -> str:
     return (
-        "Read this Jira issue payload and produce a markdown summary for code reviewers.\n\n"
-        "Requirements:\n"
-        "- Use only information from payload.\n"
-        "- If data is missing, write \"Not provided\".\n"
-        "- Keep output concise and actionable.\n"
-        "- Explicitly account for issue comments when identifying scope, constraints, and open questions.\n"
-        "- Include these sections in this order:\n"
-        "  1) Ticket\n"
-        "  2) Problem to solve\n"
-        "  3) Scope requirements\n"
-        "  4) Acceptance criteria or verification notes\n"
-        "  5) Constraints and dependencies\n"
-        "  6) Open questions\n"
-        "  7) Reviewer checklist\n\n"
-        "Payload JSON:\n"
-        f"{json.dumps(payload, indent=2)}\n"
+        "# Task\n"
+        "Transform the Jira issue JSON below into a concise Markdown briefing that helps a reviewer understand a pull "
+        "request linked to this ticket.\n"
+        "\n"
+        "# Inputs\n"
+        "The `<payload_json>` block contains a normalized subset of the Jira REST API response: "
+        "core fields, the rendered description, comments (rendered HTML, ADF body, and a flattened `text` field), "
+        "and attachment metadata.\n"
+        "\n"
+        "# Method\n"
+        "1. Read the description, then every comment in chronological order. Treat later comments as authoritative "
+        "when they refine or override earlier scope.\n"
+        "2. Extract concrete requirements, decisions, constraints, and open questions. Quote short critical phrases "
+        "verbatim when wording matters (e.g. acceptance criteria).\n"
+        "3. Drop duplicated, obsolete, or purely conversational content. Collapse repeated points.\n"
+        "4. If the payload contains no information for a section, write `- Not specified` under it. Do not omit sections.\n"
+        "\n"
+        "# Output format\n"
+        "Return Markdown with exactly these top-level sections, in this order, using `##` headings:\n"
+        "\n"
+        "## Ticket\n"
+        "One-line summary: `KEY — summary` followed by a compact bullet list of `status`, `type`, `priority`, "
+        "`assignee`, `reporter`, `components`, `fixVersions`, `labels` (omit individual bullets that are empty).\n"
+        "\n"
+        "## Problem to solve\n"
+        "2–5 sentences describing the user/business problem and why the change is needed.\n"
+        "\n"
+        "## Scope requirements\n"
+        "Bulleted list of in-scope work items derived from the description and comments. Mark anything explicitly "
+        "out of scope as `- Out of scope: ...`.\n"
+        "\n"
+        "## Acceptance criteria or verification notes\n"
+        "Bulleted, testable checks. Use the ticket's wording when provided; otherwise synthesize from scope.\n"
+        "\n"
+        "## Constraints and dependencies\n"
+        "Technical constraints, blocked-by/blocks links, environments, feature flags, data migrations, "
+        "third-party services, performance/security requirements.\n"
+        "\n"
+        "## Open questions\n"
+        "Unresolved questions raised in comments or implied by missing information. If none, write `- None`.\n"
+        "\n"
+        "## Reviewer checklist\n"
+        "Actionable bullets a PR reviewer should verify against the diff (behavior, tests, edge cases, telemetry, "
+        "docs, backwards compatibility). Each bullet phrased as an imperative starting with a verb.\n"
+        "\n"
+        "# Hard constraints\n"
+        "- Use only facts present in `<payload_json>`.\n"
+        "- Do not invent ticket links, people, dates, or version numbers.\n"
+        "- Do not include the raw JSON, IDs, URLs to avatars, or internal Jira system fields.\n"
+        "- Do not add sections beyond the seven above.\n"
+        "- Do not wrap the entire answer in a code block.\n"
+        "\n"
+        "<payload_json>\n"
+        f"{json.dumps(payload, indent=2, ensure_ascii=False)}\n"
+        "</payload_json>\n"
     )
 
 
-async def summarize_jira_issue(*, jira_issue: JsonDict, openai_api_key: str, openai_model: str) -> str:
+def build_summary_prompt_messages(*, jira_issue: JsonDict) -> list[JsonDict]:
     payload = _build_payload(jira_issue)
-    client = AsyncOpenAI(api_key=openai_api_key)
-
-    response = await client.chat.completions.create(
-        model=openai_model,
-        temperature=0.1,
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": _build_user_prompt(payload)},
-        ],
-    )
-
-    text = response.choices[0].message.content or ""
-    return text.strip()
+    return [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": _build_user_prompt(payload)},
+    ]

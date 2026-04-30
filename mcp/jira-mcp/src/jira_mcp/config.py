@@ -13,8 +13,6 @@ JIRA_URL=
 JIRA_TOKEN=
 JIRA_EMAIL=
 JIRA_AUTH_TYPE=auto
-OPENAI_API_KEY=
-JIRA_SUMMARY_OPENAI_MODEL=gpt-5.4-nano
 """
 
 
@@ -24,8 +22,6 @@ class Settings:
     jira_api_token: str
     jira_email: str
     jira_auth_type: JiraAuthType
-    openai_api_key: str
-    openai_model: str
 
 
 @dataclass(frozen=True)
@@ -34,8 +30,6 @@ class ConfigOverrides:
     jira_api_token: str | None = None
     jira_email: str | None = None
     jira_auth_type: str | None = None
-    openai_api_key: str | None = None
-    openai_model: str | None = None
 
 
 def _env_file_path() -> Path:
@@ -84,9 +78,6 @@ def load_settings(overrides: ConfigOverrides | None = None) -> Settings:
     jira_api_token = (overrides.jira_api_token or _read_env_value("JIRA_TOKEN", env_values)).strip()
     jira_email = (overrides.jira_email if overrides.jira_email is not None else _read_env_value("JIRA_EMAIL", env_values)).strip()
     jira_auth_type = _parse_auth_type(overrides.jira_auth_type) if overrides.jira_auth_type is not None else _parse_auth_type(_read_env_value("JIRA_AUTH_TYPE", env_values))
-    openai_api_key = (overrides.openai_api_key or _read_env_value("OPENAI_API_KEY", env_values)).strip()
-    openai_model = (overrides.openai_model or _read_env_value("JIRA_SUMMARY_OPENAI_MODEL", env_values) or "gpt-5.4-nano").strip()
-
     if not jira_base_url:
         raise ValueError("Missing Jira base URL. Set JIRA_URL in .env or pass jiraBaseUrl to the tool call.")
     if not jira_api_token:
@@ -97,6 +88,4 @@ def load_settings(overrides: ConfigOverrides | None = None) -> Settings:
         jira_api_token=jira_api_token,
         jira_email=jira_email,
         jira_auth_type=jira_auth_type,
-        openai_api_key=openai_api_key,
-        openai_model=openai_model,
     )

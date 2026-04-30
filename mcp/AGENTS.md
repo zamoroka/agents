@@ -26,7 +26,8 @@ uv run jira-mcp
 # from ~/.agents/mcp/jira-mcp
 ```
 
-Tools: `fetch_jira_issue_details`, `fetch_jira_my_timelogs`, `add_jira_timelog`, `fetch_jira_issue_ai_summary`
+Tools: `fetch_jira_issue_details`, `fetch_jira_my_timelogs`, `add_jira_timelog`  
+Prompts: `jira_issue_summary_prompt`
 
 ---
 

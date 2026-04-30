@@ -5,7 +5,7 @@ description: Calls any stdio MCP server tool directly via a Node.js or Python/uv
 
 # Direct Tool Call
 
-Use this skill as a **fallback only** when a live MCP server tool is unavailable.
+Use this skill as a **fallback only** when a live MCP server tool, prompt, or resource is unavailable.
 Do **not** use `web_fetch` as a substitute for MCP tool calls.
 
 ## Script locations
@@ -23,9 +23,12 @@ uv run ~/.agents/skills/direct-tool-call/direct-tool-call.py \
   --server-command '<command>' \
   --server-args '<json-array-of-args>' \
   --cwd '<server-working-dir>' \
-  --tool '<tool_name>' \
+  (--tool '<tool_name>' | --prompt '<prompt_name>' | --resource '<resource_uri>') \
   --args '<json>'
 ```
+
+For prompts, `--args` should be a JSON object. Non-string values are JSON-stringified before sending.
+For resources, `--resource` is required and `--args` is ignored.
 
 > All three flags (`--server-command`, `--server-args`, `--cwd`) are required. Look them up in
 > `~/.agents/skills/direct-tool-call/mcp-config.json` before running the script (see below).
@@ -58,6 +61,28 @@ uv run ~/.agents/skills/direct-tool-call/direct-tool-call.py \
   --cwd ~/.agents/mcp/jira-mcp \
   --tool fetch_jira_issue_details \
   --args '{"issueKey":"SUNNYR-64"}'
+```
+
+**Jira prompt (AI summary):**
+
+```bash
+uv run ~/.agents/skills/direct-tool-call/direct-tool-call.py \
+  --server-command uv \
+  --server-args '["--directory","~/.agents/mcp/jira-mcp","run","jira-mcp"]' \
+  --cwd ~/.agents/mcp/jira-mcp \
+  --prompt jira_issue_summary_prompt \
+  --args '{"issueKey":"SUNNYR-64"}'
+```
+
+**Resource read:**
+
+```bash
+uv run ~/.agents/skills/direct-tool-call/direct-tool-call.py \
+  --server-command '<command>' \
+  --server-args '<json-array-of-args>' \
+  --cwd '<server-working-dir>' \
+  --resource '<resource_uri>' \
+  --args '{}'
 ```
 
 **Chrome DevTools — list pages:**

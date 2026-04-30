@@ -11,7 +11,7 @@
 - Agent determines Jira issue key from PR data.
 - Agent always asks user to confirm detected Jira issue key.
 - If key is not in PR details, agent asks user to provide one or confirm skipping Jira step when PR is not Jira-related.
-- If Jira issue key is provided, agent checks `.env.local` for required API vars, calls `jira-mcp` tool `fetch_jira_issue_ai_summary`, and saves the returned markdown summary to the issue-summary artifact file.
+- If Jira issue key is provided, agent launches isolated subagent `jira-agent` (`~/.agents/agents/jira-agent.md`) that fetches raw issue data via `fetch_jira_issue_details`, MUST call `jira_issue_summary_prompt`, and generates the summary from that returned prompt contract; main agent then saves only that subagent output to the issue-summary artifact file.
 - Agent checks whether Jira issue scope is aligned with PR implementation, then performs regular PR review (code quality, standards, etc.).
 - Agent saves PR review artifact(s) at the end.
 
@@ -20,7 +20,7 @@
 - PR URL from user.
 - Optional Jira issue key confirmation from user.
 - Environment values in `$PROJECT_ROOT/.env.local` for Bitbucket fetch.
-- Jira/LLM values in `~/.agents/mcp/jira-mcp/.env` (or passed as MCP tool arguments) when Jira summary step is used.
+- Jira/LLM values in `~/.agents/mcp/jira-mcp/.env` (or passed as MCP tool arguments) when Jira summary step is used by the isolated Jira subagent.
 
 ## Token setup tip
 
@@ -38,7 +38,15 @@
 - If the local default Node is older (for example Node 17) and commands fail with `fetch is not defined`, run PR fetch with Node 25 and run Jira via `uv`:
   - `PROJECT_ROOT="{PROJECT_ROOT}" npx -y node@25 --loader ts-node/esm src/function.ts bitbucket {PR_URL}` from `~/.agents/skills/review-pr/scripts/pr-fetch`
   - `uv run jira-mcp` from `~/.agents/mcp/jira-mcp`
+- Jira summarization must attempt fallback when Jira MCP is unavailable: use `direct-tool-call` skill to call `fetch_jira_issue_details` before declaring Jira step failed.
 - `magento2-lsp-mcp` is expected to be preinstalled in this environment; skip reinstall in standard review runs.
+
+## Jira isolation contract
+
+- Main agent must use Jira context only from the isolated Jira subagent output.
+- If subagent output is invalid JSON or missing required fields (`issueKey`, `summary`), stop and fail instead of continuing with partial Jira context.
+- If `summary` is missing required `jira_issue_summary_prompt` headings, stop and fail instead of accepting partial structure.
+- Main agent must not merge Jira facts from direct Jira tool calls after subagent launch.
 
 ### Artifact naming convention
 

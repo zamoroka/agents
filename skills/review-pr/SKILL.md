@@ -3,7 +3,7 @@ name: review-pr
 description: "Reviews Bitbucket pull requests, summarizes diffs, and produces a full review artifact. Use when the user asks to review a PR, inspect PR changes, or run a pull request code review."
 allowed-tools: read, grep, glob, pr-fetch, jira-mcp, magento2-lsp-mcp
 metadata:
-  version: "2.1.7"
+  version: "2.1.10"
   category: "engineering"
 ---
 
@@ -76,7 +76,7 @@ Also ensure `.env.local` is listed in `$PROJECT_ROOT/.gitignore`. If it is not, 
 
 Jira MCP credentials are not read from `$PROJECT_ROOT/.env.local`. They must be set in `~/.agents/mcp/jira-mcp/.env` (or passed directly in tool arguments).
 
-For token requirements and Jira/Bitbucket authentication troubleshooting, use [auth-setup.md](./shared/auth-setup.md).
+For token requirements and Jira/Bitbucket authentication troubleshooting, use [auth-setup.md](./references/auth-setup.md).
 
 ---
 
@@ -106,17 +106,42 @@ If user says PR is not related to Jira, skip Step 5 and Step 9 ticket-alignment 
 
 ---
 
-## Step 5 — Gather and summarize Jira ticket
+## Step 5 — Gather and summarize Jira ticket (isolated subagent only)
 
-Call the `jira-mcp` MCP tool `fetch_jira_issue_ai_summary` with the detected Jira key (for example `SUNNYR-25`).
+Main agent MUST delegate Jira summarization to an isolated subagent and then use only the subagent output for all further Jira processing.
 
-Tool input:
+### Step 5.1 — Launch isolated Jira summarizer subagent (`jira-agent`)
+
+Launch the dedicated subagent named `jira-agent` from `~/.agents/agents/jira-agent.md`.
+Keep `jira-agent` generic and Jira-focused; all PR/code-review-specific policy stays in this `review-pr` skill.
+
+Subagent hard constraints:
+- Fetch Jira data via this strict order:
+  1. `jira-mcp.fetch_jira_issue_details` for `{ISSUE_KEY}` (primary).
+  2. `jira-mcp.jira_issue_summary_prompt` with `jiraIssueJson` from step 1 (mandatory).
+  3. If `jira-mcp` is unavailable or fails due to MCP connectivity/runtime/tool registration, invoke `direct-tool-call` skill and call the same Jira MCP tools as fallback.
+- Do not handcraft the summary prompt. The subagent MUST call `jira_issue_summary_prompt` and use the returned prompt messages as the summary contract.
+- Use only Jira issue raw data from `fetch_jira_issue_details` + that summary contract.
+- Do not inspect PR diff, repository files, or broader conversation context.
+- Return strict JSON only, with at minimum:
 
 ```json
-{"issueKey":"{ISSUE_KEY}"}
+{
+  "issueKey": "{ISSUE_KEY}",
+  "summary": "<markdown summary>"
+}
 ```
 
-The tool returns JSON containing `summary` markdown text. The agent must write that summary to:
+Main-agent constraints:
+- Do not call Jira tools for summarization after launching this subagent.
+- Do not mix Jira facts from any source outside the subagent output.
+- If subagent output is invalid JSON or missing required fields, stop and report failure.
+- If subagent output `summary` is missing any required heading from `jira_issue_summary_prompt` output format (`## Ticket`, `## Problem to solve`, `## Scope requirements`, `## Acceptance criteria or verification notes`, `## Constraints and dependencies`, `## Open questions`, `## Reviewer checklist`), stop and report failure.
+- If subagent reports Jira MCP unavailable without attempting fallback, treat this as subagent failure and rerun with explicit fallback instructions.
+
+### Step 5.2 — Write issue summary artifact from subagent output
+
+The main agent must write the `summary` field returned by the subagent to:
 
 - `$PROJECT_ROOT/.agents/artifacts/YYYY-mm-dd-pr-{REPO_SLUG}-{PR_NUMBER}-issue-summary.md`
 
