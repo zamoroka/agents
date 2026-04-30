@@ -1,6 +1,6 @@
 # MCP Servers — Direct Run Guide
 
-All MCP servers in this folder use **Node.js 25** and communicate over
+MCP servers in this folder communicate over
 **newline-delimited JSON-RPC 2.0** via stdin/stdout (no HTTP, no Content-Length headers).
 
 ## Usage order
@@ -15,14 +15,14 @@ All MCP servers in this folder use **Node.js 25** and communicate over
 ### jira-mcp
 
 **Location:** `~/.agents/mcp/jira-mcp`  
-**Entry point:** `dist/function.js` (pre-built)  
+**Entry point:** `uv run jira-mcp`  
 **Docs:** `jira-mcp/README.md`  
 **Config:** `jira-mcp/.env`
 
 Run:
 
 ```bash
-node dist/function.js
+uv run jira-mcp
 # from ~/.agents/mcp/jira-mcp
 ```
 
@@ -59,7 +59,7 @@ If you modify source files, rebuild before running:
 
 ```bash
 # jira-mcp
-cd ~/.agents/mcp/jira-mcp && npm run build
+cd ~/.agents/mcp/jira-mcp && uv pip install -e .
 
 # chrome-devtools-mcp
 cd ~/.agents/mcp/chrome-devtools-mcp && npm run build

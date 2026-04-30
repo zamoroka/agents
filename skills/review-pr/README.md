@@ -34,10 +34,10 @@
 ## Runtime notes
 
 - Prefer execution-first flow: run the main command and remediate concrete failures (missing files/dirs/deps/env) instead of broad pre-check passes.
-- `pr-fetch` and `jira-mcp` require a Node runtime with global `fetch` support (Node 18+).
-- If the local default Node is older (for example Node 17) and commands fail with `fetch is not defined`, run both entrypoints with Node 25:
+- `pr-fetch` requires a Node runtime with global `fetch` support (Node 18+).
+- If the local default Node is older (for example Node 17) and commands fail with `fetch is not defined`, run PR fetch with Node 25 and run Jira via `uv`:
   - `PROJECT_ROOT="{PROJECT_ROOT}" npx -y node@25 --loader ts-node/esm src/function.ts bitbucket {PR_URL}` from `~/.agents/skills/review-pr/scripts/pr-fetch`
-  - `PROJECT_ROOT="{PROJECT_ROOT}" npx -y node@25 --loader ts-node/esm src/function.ts` from `~/.agents/mcp/jira-mcp`
+  - `uv run jira-mcp` from `~/.agents/mcp/jira-mcp`
 - `magento2-lsp-mcp` is expected to be preinstalled in this environment; skip reinstall in standard review runs.
 
 ### Artifact naming convention

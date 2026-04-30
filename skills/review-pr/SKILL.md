@@ -30,7 +30,7 @@ If default Node is older than 18 and a fetch step fails with `fetch is not defin
 Dependency note for fetch steps:
 - Assume dependencies are already installed.
 - Only run `npm install --prefix ~/.agents/skills/review-pr/scripts` if a fetch command fails due to missing modules/dependencies.
-- Only run `npm install --prefix ~/.agents/mcp/jira-mcp` if Jira MCP startup/tool calls fail due to missing modules/dependencies.
+- Only run `uv pip install -e ~/.agents/mcp/jira-mcp` if Jira MCP startup/tool calls fail due to missing modules/dependencies.
 
 ---
 

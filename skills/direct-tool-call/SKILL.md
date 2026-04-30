@@ -37,7 +37,7 @@ uv run ~/.agents/skills/direct-tool-call/direct-tool-call.py \
 
 | `mcpServers` key | `--server-command` | `--server-args`                                                                                 | `--cwd` |
 |---|---|-------------------------------------------------------------------------------------------------|---|
-| `jira` | `node` | `["~/.agents/mcp/jira-mcp/dist/function.js"]`                                                   | `~/.agents/mcp/jira-mcp` |
+| `jira` | `uv` | `["--directory","~/.agents/mcp/jira-mcp","run","jira-mcp"]`                                  | `~/.agents/mcp/jira-mcp` |
 | `chrome-devtools` | `npx` | `["-y","chrome-devtools-mcp@latest"]`                                                           | _(any)_ |
 | `google-drive` | `uv` | `["--directory","~/.agents/mcp/google-drive-mcp","run","google-drive-mcp"]` | `~/.agents/mcp/google-drive-mcp` |
 | `magento2-lsp-mcp` | `magento2-lsp-mcp` | `[]`                                                                                            | _(any)_ |
@@ -53,8 +53,8 @@ uv run ~/.agents/skills/direct-tool-call/direct-tool-call.py \
 
 ```bash
 uv run ~/.agents/skills/direct-tool-call/direct-tool-call.py \
-  --server-command node \
-  --server-args '["~/.agents/mcp/jira-mcp/dist/function.js"]' \
+  --server-command uv \
+  --server-args '["--directory","~/.agents/mcp/jira-mcp","run","jira-mcp"]' \
   --cwd ~/.agents/mcp/jira-mcp \
   --tool fetch_jira_issue_details \
   --args '{"issueKey":"SUNNYR-64"}'

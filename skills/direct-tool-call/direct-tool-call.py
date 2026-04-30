@@ -14,8 +14,8 @@ Usage:
 Examples:
   # Jira
   uv run ~/.agents/skills/direct-tool-call/direct-tool-call.py \\
-    --server-command node \\
-    --server-args '["dist/function.js"]' \\
+    --server-command uv \\
+    --server-args '["--directory","~/.agents/mcp/jira-mcp","run","jira-mcp"]' \\
     --cwd ~/.agents/mcp/jira-mcp \\
     --tool fetch_jira_issue_details --args '{"issueKey":"SUNNYR-64"}'
 
@@ -134,4 +134,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

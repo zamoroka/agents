@@ -1,0 +1,97 @@
+{
+  "key": "SWISSSP-168",
+  "id": "7389694",
+  "self": "https://jira.example.invalid/rest/api/2/issue/7389694",
+  "fields": {
+    "summary": "[Alert] PLP to Checkout flow failure",
+    "status": {
+      "name": "To Do"
+    },
+    "priority": {
+      "name": "Critical"
+    },
+    "issuetype": {
+      "name": "Incident"
+    },
+    "assignee": {
+      "displayName": "On-call Engineer"
+    },
+    "reporter": {
+      "displayName": "Support Bot"
+    },
+    "created": "2026-04-30T12:45:56.000+0000",
+    "updated": "2026-04-30T13:24:43.000+0000",
+    "labels": [
+      "incident_alert",
+      "support_team"
+    ],
+    "components": [
+      {
+        "name": "Checkout"
+      }
+    ],
+    "fixVersions": [],
+    "description": "Critical priority issue is active.",
+    "attachment": [
+      {
+        "id": "att-1",
+        "filename": "incident-screenshot.png",
+        "mimeType": "image/png",
+        "size": 111110,
+        "created": "2026-04-30T13:19:57.000+0000",
+        "content": "https://jira.example.invalid/secure/attachment/att-1/incident-screenshot.png"
+      }
+    ],
+    "comment": {
+      "startAt": 0,
+      "maxResults": 2,
+      "total": 2,
+      "comments": [
+        {
+          "id": "c-1",
+          "author": {
+            "displayName": "Support Bot"
+          },
+          "created": "2026-04-30T12:48:07.000+0000",
+          "body": "Investigation in progress",
+          "renderedBody": "<p>Investigation in progress</p>"
+        },
+        {
+          "id": "c-2",
+          "author": {
+            "displayName": "On-call Engineer"
+          },
+          "created": "2026-04-30T13:15:20.000+0000",
+          "body": {
+            "type": "doc",
+            "version": 1,
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Cart is slower than usual"
+                  }
+                ]
+              },
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Checkout otherwise works"
+                  }
+                ]
+              }
+            ]
+          },
+          "renderedBody": null
+        }
+      ]
+    }
+  },
+  "renderedFields": {
+    "description": "<p>Critical priority issue is active.</p>"
+  }
+}

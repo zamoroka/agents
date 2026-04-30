@@ -6,16 +6,11 @@
     },
     "google-drive": {
       "command": "uv",
-      "args": [
-        "--directory",
-        "~/.agents/mcp/google-drive-mcp",
-        "run",
-        "google-drive-mcp"
-      ]
+      "args": ["--directory", "~/.agents/mcp/google-drive-mcp", "run", "google-drive-mcp"]
     },
     "jira": {
-      "command": "node",
-      "args": ["~/.agents/mcp/jira-mcp/dist/function.js"]
+      "command": "uv",
+      "args": ["--directory", "~/.agents/mcp/jira-mcp", "run", "jira-mcp"]
     },
     "magento2-lsp-mcp": {
       "command": "magento2-lsp-mcp",

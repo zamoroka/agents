@@ -1,0 +1,2 @@
+[console_scripts]
+jira-mcp = jira_mcp.server:main
