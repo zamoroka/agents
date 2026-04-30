@@ -3,7 +3,7 @@ name: review-pr
 description: "Reviews Bitbucket pull requests, summarizes diffs, and produces a full review artifact. Use when the user asks to review a PR, inspect PR changes, or run a pull request code review."
 allowed-tools: read, grep, glob, pr-fetch, jira-mcp, magento2-lsp-mcp
 metadata:
-  version: "2.1.16"
+  version: "2.2.0"
   category: "engineering"
 ---
 
@@ -31,6 +31,18 @@ Dependency note for fetch steps:
 - Assume dependencies are already installed.
 - Only run `npm install --prefix ~/.agents/skills/review-pr/scripts` if a fetch command fails due to missing modules/dependencies.
 - Only run `uv pip install -e ~/.agents/mcp/jira-mcp` if Jira MCP startup/tool calls fail due to missing modules/dependencies.
+
+## Isolated subagent rules
+
+Apply these rules to every isolated subagent launched by this skill (for example `jira-agent`, `functionality-checker-agent`, `changes-checker-agent`):
+
+- Use only explicitly provided inputs and scope.
+- Do not rely on broader conversation context.
+- Return strict JSON only in the schema required by that step.
+
+Main agent rules for isolated subagents:
+- Treat subagent output as the single source for that delegated step.
+- If output is invalid JSON or missing required fields, stop and report failure.
 
 ---
 
@@ -94,6 +106,55 @@ This outputs PR details, comments, changed files, and full diff to stdout, and s
 
 ---
 
+## Step 3.1 — Launch isolated changes checker (in parallel)
+
+Immediately after the diff artifact is saved, launch isolated subagent `changes-checker-agent` from `~/.agents/agents/changes-checker-agent.md`.
+
+Purpose:
+- Understand what changed in the PR diff, how it works, and what it does.
+- Identify coding-standard violations, architecture concerns, possible bugs, and security risks.
+- Perform security analysis with explicit OWASP Top 10 and Magento-specific vectors (ObjectManager abuse, unescaped template output, ACL bypass, CSRF, insecure deserialization, and related risks).
+- Own the PR code-review findings for standards/correctness/security.
+
+Execution model:
+- Start this subagent right after Step 3 and continue main flow without waiting (for example continue with Jira-key detection and Jira subagent launch).
+- This subagent must run in isolated git worktree context created from `projectRoot` and apply the PR diff patch there, so the primary workspace and other agents are not modified.
+- Main agent should collect this subagent output when available and merge it into final summary/review.
+
+Required inputs:
+- `projectRoot`: `$PROJECT_ROOT`
+- `diffPatchPath`: `$PROJECT_ROOT/.agents/artifacts/YYYY-mm-dd-pr-{REPO_SLUG}-{PR_NUMBER}-diff.patch`
+- `projectType`: `PROJECT_TYPE` when known, otherwise `unknown`
+
+Expected output from subagent (strict JSON only):
+
+```json
+{
+  "status": "ok | error",
+  "prChangeSummary": "<concise description of changed behavior>",
+  "howItWorks": "<high-level runtime/data-flow explanation>",
+  "whatItDoes": "<functional impact description>",
+  "issues": [
+    {
+      "path": "path/from-diff",
+      "line": 0,
+      "severity": "error | warning | suggestion",
+      "description": "Issue + risk + suggested fix",
+      "category": "coding_standards | architecture | bug_risk | security"
+    }
+  ],
+  "files": [{"path": "<path>", "reason": "<evidence>"}],
+  "confidence": "high | medium | low",
+  "errors": ["<present only when status=error>"]
+}
+```
+
+Failure handling:
+- If output is invalid JSON or required fields are missing, stop and report failure.
+- If `status=error`, include subagent errors in terminal output and stop before final report generation.
+
+---
+
 ## Step 4 — Determine Jira issue key
 
 The main agent must detect Jira issue key from PR data (title, branch, description, comments, changed files).
@@ -103,20 +164,6 @@ Always ask user to confirm detected key.
 - If not detected: ask user to provide Jira issue key, or confirm skipping Jira step.
 
 If user says PR is not related to Jira, skip Step 5, Step 8, and Step 10 ticket-alignment check.
-
----
-
-## Shared block — Isolated subagent rules
-
-Apply these rules to every isolated subagent launched by this skill (for example `jira-agent`, `functionality-checker-agent`):
-
-- Use only explicitly provided inputs and scope.
-- Do not rely on broader conversation context.
-- Return strict JSON only in the schema required by that step.
-
-Main agent rules for isolated subagents:
-- Treat subagent output as the single source for that delegated step.
-- If output is invalid JSON or missing required fields, stop and report failure.
 
 ---
 
@@ -264,45 +311,30 @@ Do not edit or rewrite existing sections in the issue summary file.
 
 ---
 
-## Step 9 — Summarise the PR
+## Step 9 — Review
 
-Launch an agent to view the pull request diff and return a concise summary of the changes.
+Issue output schema for code-review findings is owned by `changes-checker-agent` (`~/.agents/agents/changes-checker-agent.md`).
+Main agent must consume that output format as-is and include those issues in final findings.
 
----
+Build the concise PR summary in the main agent from `changes-checker-agent` output:
+- Primary source: `prChangeSummary`
+- Supporting context: `howItWorks`, `whatItDoes`, and fetched PR metadata
 
-## Step 10 — Review
+Always include `changes-checker-agent` output in the final findings set, regardless of whether Jira flow is skipped.
 
-Launch review agents with ordering constraints. Each agent that returns issues MUST use this exact structured format — one JSON object per issue:
+Consume `changes-checker-agent` findings and include returned `issues` in the review findings set.
+   - Treat this agent as diff-understanding + security/architecture/coding-standards specialist.
+   - If it has not completed yet, wait for it before assembling final review artifacts.
 
-```
-{"path": "app/code/Vaimo/Module/File.php", "line": 42, "severity": "warning", "description": "Description of the issue and suggested fix"}
-```
-
-- `path` — the file path as shown in the diff (relative to repo root)
-- `line` — the line number in the **new version** of the file where the issue occurs (from the diff `+` side / `@@` hunk headers). If the issue is general and not tied to a specific line, use `0`.
-- `severity` — one of: `error`, `warning`, `suggestion`
-- `description` — what the issue is, why it was flagged, and how to fix it
-
-Before review, load and apply rules from [review-guardrails.md](./references/review-guardrails.md).
-If the PR is a pure deletion, also apply [deletion-pr-checklist.md](./references/deletion-pr-checklist.md).
-
-If Jira step was not skipped, run this sequence:
-
-1. Run **Agent 1 (reasoning: medium): code-quality-checker** for code-review findings. 
-   - This agent can work in parallel with others.
-   - Checks code quality of the PR diff based on project specifications and rules as if the diff is already applied to the codebase.
-   - Focus on correctness, runtime risk, logic defects, API misuse, and missing edge-case handling.
-   - Flag any potential security concerns with severity `error` and detailed explanation.
-
-2. After Step 8 proposal append is complete, launch the **Agent 3 (reasoning: medium): ticket-alignment** agent to compare PR diff with the updated issue summary file and return mismatches.
-    - Agent checks if the PR implementation aligns with the Jira issue requirements and acceptance criteria as summarized in the issue summary artifact, including the Step 8 proposal block.
-    - For any misalignment, return an issue with severity `warning` and description explaining the mismatch and what would be needed to align the PR with the Jira issue.
+If Jira step was not skipped, wait for Step 8 proposal append is complete, launch the **ticket-alignment** agent to compare PR diff with the updated issue summary file and return mismatches.
+      - Agent checks if the PR implementation aligns with the Jira issue requirements and acceptance criteria as summarized in the issue summary artifact, including the Step 8 proposal block.
+      - For any misalignment, return an issue with severity `warning` and description explaining the mismatch and what would be needed to align the PR with the Jira issue.
 
 If `PROJECT_TYPE=magento2`, all review agents that make Magento-specific claims must use `magento2-lsp-mcp` tool calls as evidence.
 
 ---
 
-## Step 11 — Assemble and save artifacts
+## Step 10 — Assemble and save artifacts
 
 Assume `$PROJECT_ROOT/.agents/artifacts/` already exists. Create it only if artifact write fails due to missing directory.
 
