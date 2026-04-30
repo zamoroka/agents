@@ -1,11 +1,12 @@
 ---
 name: direct-tool-call
-description: Calls any stdio MCP server tool directly via a Node.js or Python/uv script when the live MCP server is unavailable in the current session. Use when an MCP tool call fails or the server is not connected.
+description: Calls any stdio MCP server tool directly via a Node.js or Python/uv script only when the live MCP server is unavailable in the current session. Use this fallback instead of web_fetch when MCP access is missing.
 ---
 
 # Direct Tool Call
 
 Use this skill as a **fallback only** when a live MCP server tool is unavailable.
+Do **not** use `web_fetch` as a substitute for MCP tool calls.
 
 ## Script locations
 

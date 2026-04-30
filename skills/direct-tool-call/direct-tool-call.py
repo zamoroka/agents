@@ -28,7 +28,7 @@ Examples:
   # Google Drive
   uv run ~/.agents/skills/direct-tool-call/direct-tool-call.py \\
     --server-command uv \\
-    --server-args '["--directory","/Users/zamoroka_pavlo/.agents/mcp/google-drive-mcp","run","google-drive-mcp"]' \\
+    --server-args '["--directory","~/.agents/mcp/google-drive-mcp","run","google-drive-mcp"]' \\
     --tool <tool_name> --args '{}'
 """
 
