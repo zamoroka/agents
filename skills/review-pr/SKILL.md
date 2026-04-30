@@ -3,7 +3,7 @@ name: review-pr
 description: "Reviews Bitbucket pull requests, summarizes diffs, and produces a full review artifact. Use when the user asks to review a PR, inspect PR changes, or run a pull request code review."
 allowed-tools: read, grep, glob, pr-fetch, jira-mcp, magento2-lsp-mcp
 metadata:
-  version: "2.1.10"
+  version: "2.1.16"
   category: "engineering"
 ---
 
@@ -102,7 +102,21 @@ Always ask user to confirm detected key.
 - If detected: ask `I found {ISSUE_KEY}. Correct?`
 - If not detected: ask user to provide Jira issue key, or confirm skipping Jira step.
 
-If user says PR is not related to Jira, skip Step 5 and Step 9 ticket-alignment check.
+If user says PR is not related to Jira, skip Step 5, Step 8, and Step 10 ticket-alignment check.
+
+---
+
+## Shared block — Isolated subagent rules
+
+Apply these rules to every isolated subagent launched by this skill (for example `jira-agent`, `functionality-checker-agent`):
+
+- Use only explicitly provided inputs and scope.
+- Do not rely on broader conversation context.
+- Return strict JSON only in the schema required by that step.
+
+Main agent rules for isolated subagents:
+- Treat subagent output as the single source for that delegated step.
+- If output is invalid JSON or missing required fields, stop and report failure.
 
 ---
 
@@ -122,7 +136,6 @@ Subagent hard constraints:
   3. If `jira-mcp` is unavailable or fails due to MCP connectivity/runtime/tool registration, invoke `direct-tool-call` skill and call the same Jira MCP tools as fallback.
 - Do not handcraft the summary prompt. The subagent MUST call `jira_issue_summary_prompt` and use the returned prompt messages as the summary contract.
 - Use only Jira issue raw data from `fetch_jira_issue_details` + that summary contract.
-- Do not inspect PR diff, repository files, or broader conversation context.
 - Return strict JSON only, with at minimum:
 
 ```json
@@ -135,7 +148,6 @@ Subagent hard constraints:
 Main-agent constraints:
 - Do not call Jira tools for summarization after launching this subagent.
 - Do not mix Jira facts from any source outside the subagent output.
-- If subagent output is invalid JSON or missing required fields, stop and report failure.
 - If subagent output `summary` is missing any required heading from `jira_issue_summary_prompt` output format (`## Ticket`, `## Problem to solve`, `## Scope requirements`, `## Acceptance criteria or verification notes`, `## Constraints and dependencies`, `## Open questions`, `## Reviewer checklist`), stop and report failure.
 - If subagent reports Jira MCP unavailable without attempting fallback, treat this as subagent failure and rerun with explicit fallback instructions.
 
@@ -193,15 +205,74 @@ If `PROJECT_TYPE=unknown`, continue without LSP/MCP enrichment.
 
 ---
 
-## Step 8 — Summarise the PR
+## Step 8 — Existing functionality check (isolated subagent only)
+
+Main agent MUST delegate existing-functionality validation to an isolated subagent after Jira summary is produced.
+
+### Step 8.1 — Launch isolated functionality checker subagent (`functionality-checker-agent`)
+
+Launch the dedicated subagent `functionality-checker-agent` from `~/.agents/agents/functionality-checker-agent.md`.
+
+Additional subagent constraint:
+- Do not use Jira tools directly.
+
+Allowed inputs:
+- `requiredFunctionality` - functionality to validate, derived from issue summary at `$PROJECT_ROOT/.agents/artifacts/YYYY-mm-dd-pr-{REPO_SLUG}-{PR_NUMBER}-issue-summary.md`
+- `projectRoot` - project source code root (`$PROJECT_ROOT`)
+- `projectType` - main technology used (`PROJECT_TYPE`)
+- Relevant `AGENTS.md` guidance, documentation and skills inside the project root.
+
+Required behavior:
+- Determine whether Jira requirements can be satisfied by already implemented/default functionality in the project.
+- If yes, propose how to use the existing/default functionality.
+- If no, provide a project-specific implementation proposal based on repository analysis.
+- If implemented, describe how it works now and cite exact files.
+- Return strict JSON only:
+
+```json
+{
+  "status": "implemented | partially_implemented | not_implemented",
+  "explanation": "<short rationale>",
+  "howItWorks": "<present when implemented/partially_implemented>",
+  "implementationProposal": "<present when not_implemented>",
+  "nextSteps": ["<optional follow-up actions>"],
+  "files": [{"path": "<path>", "reason": "<why this proves it>"}],
+  "gaps": ["<missing behavior or mismatch>"],
+  "confidence": "high | medium | low"
+}
+```
+
+Field requirements by status:
+- `implemented`: `howItWorks` + at least one `files` entry are required.
+- `partially_implemented`: `howItWorks` + at least one `files` entry + clear `gaps` are required.
+- `not_implemented`: `implementationProposal` is required.
+
+Magento evidence rule:
+- If `PROJECT_TYPE=magento2`, the subagent must use `magento2-lsp-mcp` for Magento-specific claims.
+
+### Step 8.2 — Append proposal block to issue summary artifact
+
+Main agent must append exactly one new block to the end of the issue summary file:
+
+- Heading: `## Agent proposal implementation`
+- Body:
+  - If `status=implemented`: `Decision: Use existing/default functionality` + `howItWorks` details
+  - If `status=partially_implemented`: `Decision: Use existing/default functionality with gaps to implement` + `howItWorks` + `gaps` + optional `nextSteps`
+  - If `status=not_implemented`: `Decision: New implementation required` + `implementationProposal` details
+
+Do not edit or rewrite existing sections in the issue summary file.
+
+---
+
+## Step 9 — Summarise the PR
 
 Launch an agent to view the pull request diff and return a concise summary of the changes.
 
 ---
 
-## Step 9 — Review
+## Step 10 — Review
 
-Launch 3 agents with ordering constraints. Each agent that returns issues MUST use this exact structured format — one JSON object per issue:
+Launch review agents with ordering constraints. Each agent that returns issues MUST use this exact structured format — one JSON object per issue:
 
 ```
 {"path": "app/code/Vaimo/Module/File.php", "line": 42, "severity": "warning", "description": "Description of the issue and suggested fix"}
@@ -223,29 +294,15 @@ If Jira step was not skipped, run this sequence:
    - Focus on correctness, runtime risk, logic defects, API misuse, and missing edge-case handling.
    - Flag any potential security concerns with severity `error` and detailed explanation.
 
-2. Do not wait for **Agent 1** output and launch **Agent 2 (reasoning: medium): default-functionality-checker**.
-   - Goal: check whether the Jira request can be covered by functionality that already exists in the project.
-   - Strict constraint: this agent must not inspect or use the PR diff.
-   - Inputs allowed: project source code/context, AGENTS.md guidance, and `$PROJECT_ROOT/.agents/artifacts/YYYY-mm-dd-pr-{REPO_SLUG}-{PR_NUMBER}-issue-summary.md`.
-   - Output behavior:
-     - If existing functionality can cover the Jira request, propose using default/existing functionality.
-     - If not, provide an implementation plan.
-   - Artifact update rule:
-     - Do not edit or rewrite existing sections in the issue summary file.
-     - Append one new block at the end of the file titled exactly `## Agent proposal implementation`.
-     - The block must contain either:
-       - `Decision: Use existing/default functionality` + concrete proposal details, or
-       - `Decision: New implementation required` + concise implementation plan.
-
-3. After **Agent 2** finishes and the issue summary append is complete, launch the **Agent 3 (reasoning: medium): ticket-alignment** agent to compare PR diff with the updated issue summary file and return mismatches.
-    - Agent checks if the PR implementation aligns with the Jira issue requirements and acceptance criteria as summarized in the issue summary artifact, including any updates from Agent 2.
+2. After Step 8 proposal append is complete, launch the **Agent 3 (reasoning: medium): ticket-alignment** agent to compare PR diff with the updated issue summary file and return mismatches.
+    - Agent checks if the PR implementation aligns with the Jira issue requirements and acceptance criteria as summarized in the issue summary artifact, including the Step 8 proposal block.
     - For any misalignment, return an issue with severity `warning` and description explaining the mismatch and what would be needed to align the PR with the Jira issue.
 
 If `PROJECT_TYPE=magento2`, all review agents that make Magento-specific claims must use `magento2-lsp-mcp` tool calls as evidence.
 
 ---
 
-## Step 10 — Assemble and save artifacts
+## Step 11 — Assemble and save artifacts
 
 Assume `$PROJECT_ROOT/.agents/artifacts/` already exists. Create it only if artifact write fails due to missing directory.
 

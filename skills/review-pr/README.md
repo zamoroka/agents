@@ -12,6 +12,7 @@
 - Agent always asks user to confirm detected Jira issue key.
 - If key is not in PR details, agent asks user to provide one or confirm skipping Jira step when PR is not Jira-related.
 - If Jira issue key is provided, agent launches isolated subagent `jira-agent` (`~/.agents/agents/jira-agent.md`) that fetches raw issue data via `fetch_jira_issue_details`, MUST call `jira_issue_summary_prompt`, and generates the summary from that returned prompt contract; main agent then saves only that subagent output to the issue-summary artifact file.
+- After Jira summary is saved, agent launches another isolated subagent `functionality-checker-agent` (`~/.agents/agents/functionality-checker-agent.md`) to validate whether Jira requirements are already covered by existing/default project functionality. This subagent must not inspect PR diff and returns implementation status/explanation (with exact files) plus a project-specific `implementationProposal` when status is `not_implemented`; main agent appends that output to the issue-summary artifact.
 - Agent checks whether Jira issue scope is aligned with PR implementation, then performs regular PR review (code quality, standards, etc.).
 - Agent saves PR review artifact(s) at the end.
 
@@ -40,6 +41,7 @@
   - `uv run jira-mcp` from `~/.agents/mcp/jira-mcp`
 - Jira summarization must attempt fallback when Jira MCP is unavailable: use `direct-tool-call` skill to call `fetch_jira_issue_details` before declaring Jira step failed.
 - `magento2-lsp-mcp` is expected to be preinstalled in this environment; skip reinstall in standard review runs.
+- If project type is Magento 2 / Adobe Commerce, isolated `functionality-checker-agent` should use `magento2-lsp-mcp` for Magento-specific claims.
 
 ## Jira isolation contract
 
