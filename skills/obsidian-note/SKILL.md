@@ -3,7 +3,7 @@ name: obsidian-note
 description: "Obsidian: Creates or updates vault pages (notes, meetings, and todo reports), imports Google Docs markdown, and can save content verbatim in raw mode. Use for note capture, transcript handling, or task-report requests."
 metadata:
   category: "productivity"
-  version: "3.0.1"
+  version: "3.1.0"
 ---
 
 # obsidian-note
@@ -45,29 +45,26 @@ If no content was provided, ask: *"Please paste the note content and I'll handle
 
 ### Step 2 — Resolve Google Docs URLs (if present)
 
-If input includes Google Docs URLs (`https://docs.google.com/document/d/...`):
+If input includes one or more Google Docs URLs (`https://docs.google.com/document/d/...`),
+follow [references/google-drive-usage.md](./references/google-drive-usage.md) for the full
+download-and-route workflow. That reference covers:
 
-Tool policy for note ingestion:
-- Always use `doc_markdown_download` for Google Docs note/meeting imports.
-- Never use `doc_markdown_output_tty` for this workflow because it does not persist files into the vault `_raw` staging directory.
+- how to call `doc_markdown_download` (MCP server `google-drive`)
+- staging to `VAULT_ROOT/_raw`
+- content-type detection
+- routing: meeting notes → [references/meeting-notes.md](./references/meeting-notes.md),
+  all other types → placement confirmation flow
 
-Prompt mapping guard:
-- If user says `save meeting notes from this google doc` (or close variant), force Google Docs meeting flow: download via `doc_markdown_download` to `VAULT_ROOT/_raw`, then continue meeting workflow.
-
-1. Download each document as markdown via MCP tool `doc_markdown_download` from server `google-drive` with:
-   - `doc_url`: source Google Doc URL
-   - `output_dir`: `VAULT_ROOT/_raw`
-2. If MCP is unavailable, use `direct-tool-call` skill.
-3. Use fetched markdown as canonical input content.
-4. If mode resolves to meeting flow, stage Google Docs files under `VAULT_ROOT/_raw/` and follow [references/MEETING-NOTES.md](./references/MEETING-NOTES.md) for YAML prepend + `mv` placement.
+Resume the steps below only after the Google Drive workflow has resolved the content
+and confirmed (or delegated) the write target.
 
 ### Step 3 — Detect mode
 
 Detect in this order:
 
-1. **Todo report trigger** (`what's on my todo`, `show my tasks`, `what do I need to do`) -> follow [references/TODO-REPORT.md](./references/TODO-REPORT.md).
+1. **Todo report trigger** (`what's on my todo`, `show my tasks`, `what do I need to do`) -> follow [references/todo-report.md](./references/todo-report.md).
 2. **Raw mode trigger** (`raw`, `as-is`, `verbatim`, `just save it`, `don't rewrite`, `no changes`, `don't modify`) -> follow [Raw Mode](#raw-mode).
-3. **Meeting signals** (transcript/meeting wording, dated participant discussion, action-items structure, `1-1`, `sync`, `standup`, `retrospective`, `call with`) -> follow [references/MEETING-NOTES.md](./references/MEETING-NOTES.md).
+3. **Meeting signals** (transcript/meeting wording, dated participant discussion, action-items structure, `1-1`, `sync`, `standup`, `retrospective`, `call with`) -> follow [references/meeting-notes.md](./references/meeting-notes.md).
 4. Otherwise -> continue normal mode below.
 
 ### Step 4 — Load vault context
@@ -128,8 +125,9 @@ Raw mode restrictions:
 
 ## References
 
-- Todo reporting workflow: [references/TODO-REPORT.md](./references/TODO-REPORT.md)
-- Meeting notes workflow: [references/MEETING-NOTES.md](./references/MEETING-NOTES.md)
+- Todo reporting workflow: [references/todo-report.md](./references/todo-report.md)
+- Meeting notes workflow: [references/meeting-notes.md](./references/meeting-notes.md)
+- Google Drive download and routing: [references/google-drive-usage.md](./references/google-drive-usage.md)
 
 ## Notes
 

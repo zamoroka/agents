@@ -10,6 +10,7 @@ from google_drive_mcp.services.google_docs import (
     GoogleDocUrlError,
     export_doc_markdown,
     extract_document_id,
+    get_doc_metadata,
     save_markdown,
 )
 from google_drive_mcp.tools.base import ToolRegistrar
@@ -60,6 +61,39 @@ class GoogleDocsTools(ToolRegistrar):
             return (
                 f"Downloaded markdown for document {file_id} to {output_path}. "
                 f"Characters: {len(markdown_text)}"
+            )
+
+        @mcp.tool(
+            name="doc_get_metadata",
+            description="Fetch metadata for a Google Doc: title, createdTime, modifiedTime.",
+        )
+        async def doc_get_metadata(doc_url: str) -> str:
+            """Fetch metadata for a Google Doc (title, dates).
+
+            Use this before doc_markdown_download to get the document title, which is
+            essential for deriving a meaningful output filename and review period.
+
+            Args:
+                doc_url: Google Doc URL, e.g. https://docs.google.com/document/d/{fileId}/edit
+
+            Returns:
+                JSON-like string with id, name, createdTime, modifiedTime.
+            """
+            try:
+                file_id = extract_document_id(doc_url)
+            except GoogleDocUrlError as exc:
+                return str(exc)
+
+            credentials = get_or_authorize(
+                credentials_path=settings.credentials_path,
+                token_path=settings.token_path,
+            )
+            metadata = await get_doc_metadata(file_id=file_id, credentials=credentials)
+            return (
+                f"id: {metadata.get('id')}\n"
+                f"name: {metadata.get('name')}\n"
+                f"createdTime: {metadata.get('createdTime')}\n"
+                f"modifiedTime: {metadata.get('modifiedTime')}"
             )
 
         @mcp.tool(

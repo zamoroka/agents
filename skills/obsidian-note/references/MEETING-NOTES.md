@@ -6,7 +6,7 @@ Use this workflow when meeting signals are detected by `obsidian-note`.
 
 - Creates or updates pages under `Work/Vaimo/Meeting notes/`
 - Works for pasted meeting notes and Google Docs transcripts
-- For Google Docs, stages downloaded markdown in `VAULT_ROOT/_raw/` before final placement
+- For Google Docs, the download and content-type detection is handled by [google-drive-usage.md](./google-drive-usage.md); this workflow receives the staged `_raw` file as input
 - Keeps transcript text mostly raw while enforcing meeting-note rules
 
 ## Step 1 — Gather missing context
@@ -17,21 +17,20 @@ If meeting content is missing, ask:
 If content exists but project context is unclear, ask:
 *"Was this related to a Vaimo project? If yes, which one: ARB, SunnyEurope, SwissSense, Elon, SOGESMA, or general/none?"*
 
-## Step 1a — Google Docs ingestion via vault `_raw` (required for Google Docs)
+## Step 1a — Google Docs ingestion via vault `_raw`
 
-When the source is a Google Doc URL:
+When the source is a Google Doc URL, the download is handled **upstream** by
+[google-drive-usage.md](./google-drive-usage.md) before this workflow is entered.
+By the time this step runs, the markdown file is already staged in `VAULT_ROOT/_raw/`.
 
-Tool selection rule:
-- Use `doc_markdown_download` only.
-- Do not use `doc_markdown_output_tty` for meeting imports.
+If this workflow is entered directly (not via `google-drive-usage.md`) and a Google
+Docs URL is present, redirect to `google-drive-usage.md` first — do not call
+`doc_markdown_download` here.
 
-1. Download markdown with `doc_markdown_download` and set `output_dir` to `VAULT_ROOT/_raw`.
-2. Keep that downloaded file as the ingestion source for parsing.
-3. Do not write final meeting file content first; first analyze the `_raw` file and derive metadata.
-
-Recommended naming:
-- `VAULT_ROOT/_raw/<doc-id>.md`
-- If doc-id is unavailable, use `VAULT_ROOT/_raw/<YYYY-mm-dd>-meeting-import.md`
+Expected state when entering this workflow from a Google Docs source:
+- `VAULT_ROOT/_raw/<doc-id>.md` (or `<YYYY-mm-dd>-gdoc-import.md`) exists
+- Use that file as the ingestion source for parsing (Step 2 below)
+- Do not write the final meeting file before analysing the `_raw` file and deriving metadata
 
 ## Step 2 — Parse meeting content
 

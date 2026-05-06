@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
+from typing import Any
 
 import httpx
 from google.oauth2.credentials import Credentials
@@ -39,3 +40,14 @@ def save_markdown(markdown_text: str, output_path: Path) -> Path:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(markdown_text)
     return output_path
+
+
+async def get_doc_metadata(file_id: str, credentials: Credentials) -> dict[str, Any]:
+    """Fetch document metadata (name, createdTime, modifiedTime) from the Drive API."""
+    url = f"https://www.googleapis.com/drive/v3/files/{file_id}"
+    params = {"fields": "id,name,createdTime,modifiedTime"}
+    headers = {"Authorization": f"Bearer {credentials.token}"}
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        response = await client.get(url, headers=headers, params=params)
+        response.raise_for_status()
+        return response.json()
