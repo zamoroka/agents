@@ -1,9 +1,9 @@
 ---
 name: review-people-performance
-version: 1.0.0
-description: "Guides end-to-end writing and refinement of HiBob performance reviews with evidence-first guardrails, question handling, and workspace conventions."
+description: "Drafts and refines evidence-based HiBob performance review content, including direct-report reviews, upward manager feedback, peer feedback, self-assessments, review-cycle answers, ratings, and feedback summaries. Use when the user asks to write, edit, prepare, save, or reason about performance reviews or team-member feedback."
 metadata:
   category: "productivity"
+  version: "1.0.0"
 ---
 
 # AGENTS.md — Performance Review Workspace
@@ -41,12 +41,12 @@ Use this as the default root for all review read/write operations unless the use
 ## Directory Structure
 
 ```
-my-performance/          # Self-review (own performance)
-my-team/                 # Reviews of direct reports
+my-performance/          # Self Review: user's own performance
+my-team/                 # Direct Report Review: user's review of a team member/direct report
   ├── firstname-lastname/
-my-peers/                # Peer reviews
+my-peers/                # Peer Review: user's feedback for a peer
   ├── firstname-lastname/
-my-manager/              # My manager review (upward feedback)
+my-manager/              # Upward Manager Review: user's feedback for their manager
   ├── firstname-lastname/
 ```
 
@@ -62,6 +62,20 @@ my-manager/              # My manager review (upward feedback)
 ## Session Workflow
 
 Every review-writing session follows this sequence:
+
+Use these canonical review-type names to avoid ambiguity:
+
+- **Self Review**: `my-performance/`, the user's own review.
+- **Direct Report Review**: `my-team/`, the user's review of a direct report/team member.
+- **Peer Review**: `my-peers/`, the user's review of a peer.
+- **Upward Manager Review**: `my-manager/`, the user's feedback for their manager.
+
+For Direct Report Reviews under `my-team/`, also read
+[references/direct-report-reviews.md](./references/direct-report-reviews.md) before drafting or
+saving. It contains the detailed evidence-window, source-weighting, and current team-review file
+conventions. Do not call this review type "Manager Review"; `Manager review` may appear as a
+section heading inside a `my-team/` file, meaning the answers written by the user as the person's
+manager.
 
 ### 1. Preflight — Identify & Confirm
 
@@ -80,7 +94,7 @@ Before any drafting, confirm with the user:
 - Check the same person's folder in the current review-type directory for **previous review-cycle files**. If found, load them as historical context before drafting.
 - Also check the other review-type directories for a folder with the same confirmed person slug (for example the same person may exist in both `my-peers/` and `my-manager/`). If matching files exist there, load them as cross-context too.
 - Use previous reviews to identify recurring strengths, growth areas, unresolved themes, and places where the new review should be more specific or more complete than earlier cycles.
-- Treat previous reviews, including files from other review-type directories, as **context**, not as automatic evidence for the current cycle. Reuse only what the user confirms or what is clearly still applicable, and adjust for the fact that question framing and tone may differ between peer, manager, team, and self reviews.
+- Treat previous reviews, including files from other review-type directories, as **context**, not as automatic evidence for the current cycle. Reuse only what the user confirms or what is clearly still applicable, and adjust for the fact that question framing and tone may differ between Peer Reviews, Upward Manager Reviews, Direct Report Reviews, and Self Reviews.
 - Use the **`obsidian-note`** skill to search for prior context about the person (meeting notes, project work, 1:1 notes, past reviews). Skip if the user provides sufficient material or explicitly opts out.
 - Present a summary of found context to the user for validation.
 
@@ -104,7 +118,7 @@ Do not proceed to drafting until there is sufficient evidence for each review qu
 
 ### 4. Draft Answers
 
-- Use the **`impersonator`** skill for all authored review text to match the user's writing voice.
+- Use the **`impersonator`** skill before drafting or editing any review/feedback text so the tone matches the user's writing voice.
 - Draft answers one question at a time or in batches as the user prefers.
 - If previous reviews exist, make the new review more extensive where justified: add sharper examples, clearer rationale, and note meaningful changes since the last cycle instead of repeating old wording.
 - Before writing, assign each key point to one primary answer. Do not repeat the same praise, critique, or example across multiple open questions unless the later question is explicitly a summary or adds a clearly different angle.
@@ -154,26 +168,31 @@ These rules are **mandatory** and override all other instructions:
 
 Each review type has different focus areas and tone:
 
-### Self-Review (`my-performance/`)
+### Self Review (`my-performance/`)
 
+- Meaning: the user writes about their own performance
 - Focus: outcomes delivered, leadership demonstrated, measurable impact, professional growth
 - Tone: confident but honest, reflective
 - Include: concrete achievements, challenges overcome, areas for continued development
 
-### Team Review (`my-team/`)
+### Direct Report Review (`my-team/`)
 
-- Focus: individual strengths, growth areas, coaching opportunities, evidence of progress
+- Meaning: the user writes about a direct report/team member as their manager
+- Focus: performance, strengths, growth areas, coaching opportunities, goal progress, and potential
 - Tone: supportive, developmental, specific
-- Include: what went well, where to improve, actionable next steps
+- Include: what went well, what needs work, support/coaching/training, next-cycle focus, and actionable next steps
+- Note: files often contain a `Manager review` section; that is a section label, not the review type name
 
 ### Peer Review (`my-peers/`)
 
+- Meaning: the user writes feedback about a peer or colleague
 - Focus: collaboration quality, reliability, influence, technical contribution
 - Tone: collegial, constructive, honest
 - Include: specific examples of working together, impact on shared goals
 
-### Manager Review (`my-manager/`)
+### Upward Manager Review (`my-manager/`)
 
+- Meaning: the user writes feedback about their own manager
 - Focus: support quality, clarity of direction, empowerment, feedback effectiveness
 - Tone: respectful, constructive, specific
 - Include: what works well in the relationship, what could improve, suggestions
@@ -224,7 +243,7 @@ If evidence is insufficient:
 
 | Skill | When | Purpose |
 |---|---|---|
-| `impersonator` | All drafted review text | Match the user's writing voice and tone |
+| `impersonator` | All drafted or edited review/feedback text | Match the user's writing voice and tone |
 | `obsidian-note` | Context gathering and **all file create/update operations** (mandatory) | Discover prior notes, enforce tagging/summary/related rules, and safely create/update review pages |
 
 ---
