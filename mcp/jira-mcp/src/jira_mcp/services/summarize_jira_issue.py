@@ -167,7 +167,7 @@ def _build_user_prompt(payload: JsonDict) -> str:
 
 def build_summary_prompt_messages(*, jira_issue: JsonDict) -> list[JsonDict]:
     payload = _build_payload(jira_issue)
+    combined_user_prompt = f"{SYSTEM_PROMPT}\n\n---\n\n{_build_user_prompt(payload)}"
     return [
-        {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": _build_user_prompt(payload)},
+        {"role": "user", "content": combined_user_prompt},
     ]

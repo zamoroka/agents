@@ -42,7 +42,11 @@ Apply these rules to every isolated subagent launched by this skill (for example
 
 Main agent rules for isolated subagents:
 - Treat subagent output as the single source for that delegated step.
-- If output is invalid JSON or missing required fields, stop and report failure.
+- **TIMEOUT:** If a subagent has not returned within 10 minutes of launch, STOP and report a timeout error with the subagent name. Do not wait further or retry automatically.
+- **MANDATORY VALIDATION:** If output is invalid JSON or missing required fields, STOP and report failure with specific details.
+- **FABRICATION DETECTION:** If subagent admits to fabricating data, making up information, or not calling required tools, STOP and report fabrication error.
+- **TOOL EXECUTION VALIDATION:** For Jira subagents, validate that required tools (`fetch_jira_issue_details`, `jira_issue_summary_prompt`) were actually executed by checking subagent's tool execution confirmation.
+- **EXPLICIT ERROR HANDLING:** If subagent returns `status: "error"`, include error details in main review and do not proceed with that data source.
 
 ---
 
@@ -92,6 +96,26 @@ For token requirements and Jira/Bitbucket authentication troubleshooting, use [a
 
 ---
 
+## Step 2.1 — Load project intelligence
+
+Read the root `$PROJECT_ROOT/AGENTS.md` and detect `PROJECT_TYPE` from explicit project identifiers:
+- If AGENTS.md indicates Magento 2 / Adobe Commerce -> `PROJECT_TYPE=magento2`
+- Otherwise -> `PROJECT_TYPE=unknown`
+
+Select an LSP/MCP provider based on `PROJECT_TYPE`:
+- `magento2` -> use `magento2-lsp-mcp`
+
+Environment note:
+- `magento2-lsp-mcp` is expected to be preinstalled in this environment; do not reinstall it during normal review flow.
+
+For `magento2`, the summarizer and review agents must call Magento MCP tools for changed PHP/XML areas to validate merged Magento behavior (DI preferences/plugins, event observers, template/layout wiring, config-driven behavior) instead of relying on raw file reading alone.
+
+See [magento2-lsp-mcp-usage.md](./references/magento2-lsp-mcp-usage.md) for the expected evidence workflow.
+
+If `PROJECT_TYPE=unknown`, continue without LSP/MCP enrichment.
+
+---
+
 ## Step 3 — Fetch PR data
 
 Run the Bitbucket Node module, passing the project root:
@@ -106,9 +130,19 @@ This outputs PR details, comments, changed files, and full diff to stdout, and s
 
 ---
 
-## Step 3.1 — Launch isolated changes checker (in parallel)
+## Step 3.1 — Load AGENTS.md from PR-modified directories
 
-Immediately after the diff artifact is saved, launch isolated subagent `changes-checker-agent` from `~/.agents/agents/changes-checker-agent.md`.
+Using the list of changed files from Step 3, locate any `AGENTS.md` files in directories containing files modified by the pull request (beyond the root `AGENTS.md` already loaded in Step 2.1).
+
+Read each located file and store the combined content as `PR_AGENTS_CONTEXT`. This context is passed to `changes-checker-agent` (Step 4) and `functionality-checker-agent` (Step 7.1) as additional guidance.
+
+If no additional `AGENTS.md` files are found, set `PR_AGENTS_CONTEXT` to an empty string and continue.
+
+---
+
+## Step 4 — Launch isolated changes checker (in parallel)
+
+Immediately after Step 3.1, launch isolated subagent `changes-checker-agent` from `~/.agents/agents/changes-checker-agent.md`.
 
 Purpose:
 - Understand what changed in the PR diff, how it works, and what it does.
@@ -117,14 +151,15 @@ Purpose:
 - Own the PR code-review findings for standards/correctness/security.
 
 Execution model:
-- Start this subagent right after Step 3 and continue main flow without waiting (for example continue with Jira-key detection and Jira subagent launch).
+- Start this subagent right after Step 3.1 and continue main flow without waiting (for example continue with Jira-key detection and Jira subagent launch).
 - This subagent must run in isolated git worktree context created from `projectRoot` and apply the PR diff patch there, so the primary workspace and other agents are not modified.
 - Main agent should collect this subagent output when available and merge it into final summary/review.
 
 Required inputs:
 - `projectRoot`: `$PROJECT_ROOT`
 - `diffPatchPath`: `$PROJECT_ROOT/.agents/artifacts/YYYY-mm-dd-pr-{REPO_SLUG}-{PR_NUMBER}-diff.patch`
-- `projectType`: `PROJECT_TYPE` when known, otherwise `unknown`
+- `projectType`: `PROJECT_TYPE`
+- `agentsContext`: `PR_AGENTS_CONTEXT`
 
 Expected output from subagent (strict JSON only):
 
@@ -152,10 +187,11 @@ Expected output from subagent (strict JSON only):
 Failure handling:
 - If output is invalid JSON or required fields are missing, stop and report failure.
 - If `status=error`, include subagent errors in terminal output and stop before final report generation.
+- **Worktree fallback (not yet implemented):** if git worktree creation fails, CC should fall back to applying the diff to a temporary copy of changed files rather than a full worktree, and return `confidence: "low"` in all findings to signal reduced isolation. Until implemented, a worktree failure is a hard stop.
 
 ---
 
-## Step 4 — Determine Jira issue key
+## Step 5 — Determine Jira issue key
 
 The main agent must detect Jira issue key from PR data (title, branch, description, comments, changed files).
 
@@ -163,15 +199,15 @@ Always ask user to confirm detected key.
 - If detected: ask `I found {ISSUE_KEY}. Correct?`
 - If not detected: ask user to provide Jira issue key, or confirm skipping Jira step.
 
-If user says PR is not related to Jira, skip Step 5, Step 8, and Step 10 ticket-alignment check.
+If user says PR is not related to Jira, skip Step 6, Step 7, and Jira alignment checks in Step 8.
 
 ---
 
-## Step 5 — Gather and summarize Jira ticket (isolated subagent only)
+## Step 6 — Gather and summarize Jira ticket (isolated subagent only)
 
 Main agent MUST delegate Jira summarization to an isolated subagent and then use only the subagent output for all further Jira processing.
 
-### Step 5.1 — Launch isolated Jira summarizer subagent (`jira-agent`)
+### Step 6.1 — Launch isolated Jira summarizer subagent (`jira-agent`)
 
 Launch the dedicated subagent named `jira-agent` from `~/.agents/agents/jira-agent.md`.
 Keep `jira-agent` generic and Jira-focused; all PR/code-review-specific policy stays in this `review-pr` skill.
@@ -181,7 +217,10 @@ Subagent hard constraints:
   1. `jira-mcp.fetch_jira_issue_details` for `{ISSUE_KEY}` (primary).
   2. `jira-mcp.jira_issue_summary_prompt` with `jiraIssueJson` from step 1 (mandatory).
   3. If `jira-mcp` is unavailable or fails due to MCP connectivity/runtime/tool registration, invoke `direct-tool-call` skill and call the same Jira MCP tools as fallback.
+- **EXECUTION PROOF REQUIRED:** Must include in response exactly which tools were called and their success/failure status.
+- **NO SHORTCUTS:** Cannot skip jira_issue_summary_prompt. Cannot fabricate or improvise summary.
 - Do not handcraft the summary prompt. The subagent MUST call `jira_issue_summary_prompt` and use the returned prompt messages as the summary contract.
+- **EXPLICIT FAILURE:** If any required tool fails, return `status: "error"` with specific error details.
 - Use only Jira issue raw data from `fetch_jira_issue_details` + that summary contract.
 - Return strict JSON only, with at minimum:
 
@@ -195,10 +234,12 @@ Subagent hard constraints:
 Main-agent constraints:
 - Do not call Jira tools for summarization after launching this subagent.
 - Do not mix Jira facts from any source outside the subagent output.
-- If subagent output `summary` is missing any required heading from `jira_issue_summary_prompt` output format (`## Ticket`, `## Problem to solve`, `## Scope requirements`, `## Acceptance criteria or verification notes`, `## Constraints and dependencies`, `## Open questions`, `## Reviewer checklist`), stop and report failure.
+- **MANDATORY VALIDATION:** If subagent output `summary` is missing any **required** heading (`## Ticket`, `## Problem to solve`, `## Scope requirements`, `## Acceptance criteria or verification notes`), STOP and report failure with specific missing sections. If any **optional** heading is missing (`## Constraints and dependencies`, `## Open questions`, `## Reviewer checklist`), log a warning but continue.
+- **TOOL EXECUTION VALIDATION:** Subagent MUST confirm it called both `fetch_jira_issue_details` and `jira_issue_summary_prompt`. If not confirmed, STOP and report tool execution failure.
+- **NO FABRICATION:** If subagent admits to fabricating data or not calling required tools, STOP and report fabrication error.
 - If subagent reports Jira MCP unavailable without attempting fallback, treat this as subagent failure and rerun with explicit fallback instructions.
 
-### Step 5.2 — Write issue summary artifact from subagent output
+### Step 6.2 — Write issue summary artifact from subagent output
 
 The main agent must write the `summary` field returned by the subagent to:
 
@@ -214,49 +255,15 @@ Jira ticket: {ISSUE_KEY}
 {summary}
 ```
 
-If artifact write fails because the directory does not exist, create `$PROJECT_ROOT/.agents/artifacts/` and retry.
-
-If needed, use the shared fallback above (`jira-mcp` connected first; direct-call workaround only if unavailable).
+If artifact write fails for any reason, STOP immediately and report the error. Do not attempt to continue. The user must resolve the issue (e.g. check directory permissions) and re-run the workflow.
 
 ---
 
-## Step 6 — Load relevant AGENTS.md files and detect project type
-
-Launch an agent to return a list of file paths (not their contents) for all relevant `AGENTS.md` files including:
-- The root `AGENTS.md` at `$PROJECT_ROOT/AGENTS.md`
-- Any `AGENTS.md` files in directories containing files modified by the pull request
-
-Then read the root `$PROJECT_ROOT/AGENTS.md` and detect `PROJECT_TYPE` from explicit project identifiers.
-
-For now support only:
-- If AGENTS.md indicates Magento 2 / Adobe Commerce -> `PROJECT_TYPE=magento2`
-- Otherwise -> `PROJECT_TYPE=unknown`
-
----
-
-## Step 7 — Load project intelligence provider
-
-Select an LSP/MCP provider based on `PROJECT_TYPE` and load system context before summarizing/reviewing code.
-
-Current mapping:
-- `magento2` -> use `magento2-lsp-mcp`
-
-Environment note:
-- `magento2-lsp-mcp` is expected to be preinstalled in this environment; do not reinstall it during normal review flow.
-
-For `magento2`, the summarizer and review agents must call Magento MCP tools for changed PHP/XML areas to validate merged Magento behavior (DI preferences/plugins, event observers, template/layout wiring, config-driven behavior) instead of relying on raw file reading alone.
-
-See [magento2-lsp-mcp-usage.md](./references/magento2-lsp-mcp-usage.md) for the expected evidence workflow.
-
-If `PROJECT_TYPE=unknown`, continue without LSP/MCP enrichment.
-
----
-
-## Step 8 — Existing functionality check (isolated subagent only)
+## Step 7 — Existing functionality check (isolated subagent only)
 
 Main agent MUST delegate existing-functionality validation to an isolated subagent after Jira summary is produced.
 
-### Step 8.1 — Launch isolated functionality checker subagent (`functionality-checker-agent`)
+### Step 7.1 — Launch isolated functionality checker subagent (`functionality-checker-agent`)
 
 Launch the dedicated subagent `functionality-checker-agent` from `~/.agents/agents/functionality-checker-agent.md`.
 
@@ -267,6 +274,7 @@ Allowed inputs:
 - `requiredFunctionality` - functionality to validate, derived from issue summary at `$PROJECT_ROOT/.agents/artifacts/YYYY-mm-dd-pr-{REPO_SLUG}-{PR_NUMBER}-issue-summary.md`
 - `projectRoot` - project source code root (`$PROJECT_ROOT`)
 - `projectType` - main technology used (`PROJECT_TYPE`)
+- `agentsContext` - `PR_AGENTS_CONTEXT` from Step 3.1
 - Relevant `AGENTS.md` guidance, documentation and skills inside the project root.
 
 Required behavior:
@@ -297,7 +305,7 @@ Field requirements by status:
 Magento evidence rule:
 - If `PROJECT_TYPE=magento2`, the subagent must use `magento2-lsp-mcp` for Magento-specific claims.
 
-### Step 8.2 — Append proposal block to issue summary artifact
+### Step 7.2 — Append proposal block to issue summary artifact
 
 Main agent must append exactly one new block to the end of the issue summary file:
 
@@ -309,9 +317,18 @@ Main agent must append exactly one new block to the end of the issue summary fil
 
 Do not edit or rewrite existing sections in the issue summary file.
 
+If the append fails for any reason, STOP immediately and report the error. The user must resolve the issue and re-run the workflow.
+
 ---
 
-## Step 9 — Review
+## Step 8 — Review
+
+This step is aggregation and alignment analysis in the main agent only. Do not launch additional subagents in Step 8.
+
+Wait for and consume outputs from already launched subagents:
+- `changes-checker-agent` (required)
+- `jira-agent` (when Jira flow is enabled)
+- `functionality-checker-agent` (when Jira flow is enabled)
 
 Issue output schema for code-review findings is owned by `changes-checker-agent` (`~/.agents/agents/changes-checker-agent.md`).
 Main agent must consume that output format as-is and include those issues in final findings.
@@ -322,21 +339,26 @@ Build the concise PR summary in the main agent from `changes-checker-agent` outp
 
 Always include `changes-checker-agent` output in the final findings set, regardless of whether Jira flow is skipped.
 
-Consume `changes-checker-agent` findings and include returned `issues` in the review findings set.
-   - Treat this agent as diff-understanding + security/architecture/coding-standards specialist.
-   - If it has not completed yet, wait for it before assembling final review artifacts.
+If Jira flow is enabled, the main agent must perform cross-checks directly (without new subagents):
+- Compare PR changes (`changes-checker-agent` output) against Jira expectations (`jira-agent` summary artifact).
+- Compare `functionality-checker-agent` decision/proposal with actual PR implementation from `changes-checker-agent`.
+- Identify mismatches, missing scope, over-implementation, or contradictory conclusions between subagents.
+- For each mismatch, add a finding with severity `warning` that explains the gap and what is needed to align with Jira intent.
+- Add improvement suggestions when there is a clearly better implementation approach, with rationale tied to Jira scope and repository conventions.
 
-If Jira step was not skipped, wait for Step 8 proposal append is complete, launch the **ticket-alignment** agent to compare PR diff with the updated issue summary file and return mismatches.
-      - Agent checks if the PR implementation aligns with the Jira issue requirements and acceptance criteria as summarized in the issue summary artifact, including the Step 8 proposal block.
-      - For any misalignment, return an issue with severity `warning` and description explaining the mismatch and what would be needed to align the PR with the Jira issue.
+If Jira flow is skipped, evaluate only `changes-checker-agent` output and PR metadata.
 
-If `PROJECT_TYPE=magento2`, all review agents that make Magento-specific claims must use `magento2-lsp-mcp` tool calls as evidence.
+If `PROJECT_TYPE=magento2`, any Magento-specific claims included in final findings must be evidence-backed by `magento2-lsp-mcp` calls from existing subagent outputs or main-agent calls.
+
+**Magento claim validation (not yet implemented):** when `PROJECT_TYPE=magento2`, `changes-checker-agent` should include a `magentoMcpCalls` array in its JSON output listing MCP tools it invoked. Main agent should validate this field is non-empty before accepting Magento-specific findings; findings without MCP evidence should be downgraded to `confidence: "low"` with an explicit `[unverified — no MCP evidence]` marker.
 
 ---
 
-## Step 10 — Assemble and save artifacts
+## Step 9 — Assemble and save artifacts
 
-Assume `$PROJECT_ROOT/.agents/artifacts/` already exists. Create it only if artifact write fails due to missing directory.
+This step is artifact creation only. Do not launch additional subagents in Step 9.
+
+Assume `$PROJECT_ROOT/.agents/artifacts/` already exists. If any artifact write fails for any reason, STOP immediately and report the error. The user must resolve the issue and re-run the workflow.
 
 Merge findings from all launched agents into a single review output, organized by file and line number when applicable. For each finding, include severity, impact, and suggested fix. Add concrete implementation suggestions and code snippets where useful.
 

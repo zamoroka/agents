@@ -8,16 +8,17 @@
 - Agent validates URL shape, detects git provider, and runs `pr-fetch` with provider + PR URL for Bitbucket.
 - If provider is GitHub, agent responds: `not supported yet`.
 - `pr-fetch` returns PR details, comments, and full diff to the agent.
-- Agent launches isolated `changes-checker-agent` right after diff artifact is saved and continues the main flow in parallel.
+- Agent loads relevant `AGENTS.md` files, detects project type, and selects the LSP/MCP provider (before fetch).
+- Agent launches isolated `changes-checker-agent` (with known project type) and continues the main flow in parallel.
 - Agent determines Jira issue key from PR data.
 - Agent always asks user to confirm detected Jira issue key.
 - If key is not in PR details, agent asks user to provide one or confirm skipping Jira step when PR is not Jira-related.
 - If Jira issue key is provided, agent launches isolated subagent `jira-agent` (`~/.agents/agents/jira-agent.md`) that fetches raw issue data via `fetch_jira_issue_details`, MUST call `jira_issue_summary_prompt`, and generates the summary from that returned prompt contract; main agent then saves only that subagent output to the issue-summary artifact file.
 - After Jira summary is saved, agent launches another isolated subagent `functionality-checker-agent` (`~/.agents/agents/functionality-checker-agent.md`) to validate whether Jira requirements are already covered by existing/default project functionality. This subagent must not inspect PR diff and returns implementation status/explanation (with exact files) plus a project-specific `implementationProposal` when status is `not_implemented`; main agent appends that output to the issue-summary artifact.
 - `changes-checker-agent` performs PR code review (quality, standards, architecture, bug risk, security) using guardrails/checklists.
-- Agent checks whether Jira issue scope is aligned with PR implementation.
-- Agent builds the PR summary from `changes-checker-agent` output (fallback summarizer only when changes checker output is missing/incomplete).
-- Agent saves PR review artifact(s) at the end.
+- In review step (main agent only), agent cross-checks outputs from `changes-checker-agent`, `jira-agent`, and `functionality-checker-agent` for alignment/mismatches and better implementation options; if Jira is skipped, it judges based on `changes-checker-agent` only.
+- Agent builds the PR summary from `changes-checker-agent` output.
+- In artifact step (main agent only), agent saves final PR review artifact.
 
 ## Sequence diagram
 
@@ -29,18 +30,19 @@ sequenceDiagram
     participant BB as Bitbucket PR fetch
     participant CC as changes-checker-agent
     participant JA as jira-agent
-    participant AF as AGENTS.md locator
-    participant DF as default-functionality-checker
-    participant TA as ticket-alignment
+    participant FC as functionality-checker-agent
     participant JM as jira-mcp/direct-tool-call
     participant MM as magento2-lsp-mcp
     participant FS as Artifacts filesystem
 
     U->>M: Provide PR URL
     M->>M: Validate URL, detect project root, ensure .env.local/.gitignore
+    M->>M: Read AGENTS.md, detect project type and select LSP/MCP provider
     M->>BB: Fetch PR metadata + diff
     BB-->>M: PR details, comments, changed files, diff
     M->>FS: Save diff artifact
+    M->>M: Load AGENTS.md from PR-modified directories
+
     M->>CC: Launch isolated changes checker (parallel)
 
     M->>M: Detect Jira issue key from PR data
@@ -49,58 +51,123 @@ sequenceDiagram
     alt Jira linked
         M->>JA: Launch isolated Jira summarizer
         JA->>JM: fetch_jira_issue_details
-        JA->>JM: fetch_jira_issue_ai_summary
+        JA->>JM: jira_issue_summary_prompt
         JM-->>JA: Jira raw data + summary contract
         JA-->>M: JSON {issueKey, summary}
         M->>FS: Save issue-summary artifact
     else No Jira
-        M->>M: Skip Jira summary and ticket-alignment
+        M->>M: Skip Jira summary and functionality check
     end
-
-    M->>AF: Locate relevant AGENTS.md paths
-    AF-->>M: AGENTS.md path list
-    M->>M: Detect project type from root AGENTS.md
-
-    CC-->>M: prChangeSummary + howItWorks + issues
-    M->>M: Build PR summary from changes-checker output
-
-    CC->>M: Return summary + review findings
-    M->>DF: Check default functionality (no diff access)
-    DF->>FS: Read issue-summary artifact
-    alt Magento project
-        DF->>MM: Collect Magento evidence
-        MM-->>DF: Project behavior evidence
-    end
-    DF->>FS: Append "## Agent proposal implementation"
-    DF-->>M: Decision/proposal
 
     alt Jira linked
-        M->>TA: Launch after DF completion
-        TA->>FS: Read updated issue-summary artifact
-        TA->>BB: Compare PR diff vs Jira summary
+        M->>FC: Check existing/default functionality (no diff access)
+        FC->>FS: Read issue-summary artifact
         alt Magento project
-            TA->>MM: Validate Magento-specific alignment claims
-            MM-->>TA: Evidence
+            FC->>MM: Collect Magento evidence
+            MM-->>FC: Project behavior evidence
         end
-        TA-->>M: Alignment mismatches (warnings)
+        FC-->>M: Decision/proposal
+        M->>FS: Append "## Agent proposal implementation"
     end
 
-    M->>M: Merge findings from all agents
+    CC-->>M: Return summary + review findings
+    alt Jira linked
+        M->>M: Cross-check Jira summary vs PR changes
+        M->>M: Cross-check functionality output vs PR changes
+        M->>M: Add mismatch warnings and better-solution notes
+    else No Jira
+        M->>M: Judge quality from changes-checker output only
+    end
+
+    M->>M: Merge findings from existing subagent outputs
     M->>FS: Save final review artifact
     M-->>U: Return artifact path + issue count summary
 ```
 
 ### Agent dependencies
 
-- Always spawned: `changes-checker-agent`, `AGENTS.md locator`.
-- Jira flow only: `jira-agent`, `default-functionality-checker`, `ticket-alignment`.
-- Ordering constraints: `jira-agent` must finish before writing issue summary; `default-functionality-checker` must finish before `ticket-alignment` starts.
+- Always spawned: `changes-checker-agent`.
+- Jira flow only: `jira-agent`, `functionality-checker-agent`.
+- Ordering constraints: `jira-agent` must finish before writing issue summary; issue summary write must finish before `functionality-checker-agent` starts.
+- Timeout: all subagents have a 10-minute hard limit; main agent STOPs on timeout.
 - Review ownership: code-review findings are produced by `changes-checker-agent`.
-- Summary dependency: main agent uses `changes-checker-agent` summary fields by default; separate summarizer is fallback-only.
+- Summary dependency: main agent uses `changes-checker-agent` summary fields.
+- Step 8/9 rule: main agent does not launch extra subagents; it aggregates existing subagent outputs and writes final artifact.
+- Artifact write failure: any write failure is a hard STOP — no retries, user re-runs the workflow.
 - Conditional dependency: when project type is Magento 2, agents making Magento-specific claims must use `magento2-lsp-mcp` as evidence.
 - Fallback dependency: `jira-agent` uses `jira-mcp` first, then `direct-tool-call` fallback when MCP is unavailable.
 
-## Inputs
+## Parallel execution timeline
+
+> Represents the Jira-linked flow (longest path). No-Jira flow skips `jira-agent` and `functionality-checker-agent` rows.
+
+```mermaid
+gantt
+    title review-pr — parallel execution
+    dateFormat  X
+    axisFormat  %s
+
+    section Bootstrap
+    Steps 0-2.1  root · env · project type      : 0, 3
+    Step 3  fetch PR data                        : 3, 5
+    Step 3.1  load AGENTS.md from PR-modified dirs : 5, 6
+
+    section Main agent
+    Step 5  detect + confirm Jira key            : 6, 7
+    Step 6  launch + await jira-agent            : 7, 10
+    Step 6.2  write issue-summary artifact       : 10, 11
+    Step 7  launch + await functionality-checker : 11, 14
+    Step 8  collect CC output + cross-check      : 14, 17
+    Step 9  save review artifact                 : 17, 19
+
+    section changes-checker-agent
+    Step 4-8  code review (background)           : crit, 6, 14
+
+    section jira-agent
+    Step 6  fetch + summarize ticket             : 7, 10
+
+    section functionality-checker-agent
+    Step 7  check existing functionality         : 11, 14
+```
+
+## Artifact data flow
+
+```mermaid
+flowchart LR
+    subgraph ext [External]
+        BB[(Bitbucket PR)]
+        JM[(Jira via jira-mcp)]
+    end
+
+    subgraph agents [Agents]
+        M(Main agent)
+        CC(changes-checker-agent)
+        JA(jira-agent)
+        FC(functionality-checker-agent)
+    end
+
+    subgraph files [Artifact files]
+        DIFF[diff.patch]
+        IS[issue-summary.md]
+        RV[review.md]
+    end
+
+    BB -->|pr-fetch| DIFF
+    DIFF -->|read| CC
+    CC -->|JSON findings| M
+
+    JM --> JA
+    JA -->|JSON summary| M
+    M -->|create| IS
+
+    IS -->|read| FC
+    FC -->|JSON proposal| M
+    M -->|append proposal| IS
+
+    M -->|merge + create| RV
+```
+
+
 
 - PR URL from user.
 - Optional Jira issue key confirmation from user.
