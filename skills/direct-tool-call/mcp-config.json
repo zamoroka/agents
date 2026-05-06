@@ -6,7 +6,7 @@
     },
     "google-drive": {
       "command": "uv",
-      "args": ["--directory", "~/.agents/mcp/mcp-google-drive", "run", "google-drive-mcp"]
+      "args": ["--directory", "~/.agents/mcp/mcp-google-drive", "run", "mcp-google-drive"]
     },
     "jira": {
       "command": "uv",

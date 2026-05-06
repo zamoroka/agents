@@ -16,7 +16,7 @@ Current functionality:
 ## Project structure
 
 ```text
-google-drive-mcp/
+mcp-google-drive/
   src/google_drive_mcp/
     auth/
       cli.py              # Manual authorization command
@@ -59,13 +59,13 @@ uv pip install -e .
 Then run initial authorization:
 
 ```bash
-google-drive-mcp-auth
+mcp-google-drive-auth
 ```
 
-If you see `command not found: google-drive-mcp-auth`, run it via `uv` without installing scripts globally:
+If you see `command not found: mcp-google-drive-auth`, run it via `uv` without installing scripts globally:
 
 ```bash
-uv run google-drive-mcp-auth
+uv run mcp-google-drive-auth
 ```
 
 Or install project scripts into a local virtual environment first:
@@ -74,7 +74,7 @@ Or install project scripts into a local virtual environment first:
 uv venv
 source .venv/bin/activate
 uv pip install -e .
-google-drive-mcp-auth
+mcp-google-drive-auth
 ```
 
 This opens a browser consent flow and stores token at:
@@ -84,13 +84,13 @@ This opens a browser consent flow and stores token at:
 ## Run MCP server
 
 ```bash
-google-drive-mcp
+mcp-google-drive
 ```
 
 If the command is not available in your shell, you can also run:
 
 ```bash
-uv run google-drive-mcp
+uv run mcp-google-drive
 ```
 
 ## Run MCP dev (inspector UI)
@@ -144,9 +144,9 @@ Behavior:
       "command": "uv",
       "args": [
         "--directory",
-        "/ABSOLUTE/PATH/TO/google-drive-mcp",
+        "/ABSOLUTE/PATH/TO/mcp-google-drive",
         "run",
-        "google-drive-mcp"
+        "mcp-google-drive"
       ]
     }
   }

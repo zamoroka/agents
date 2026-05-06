@@ -47,7 +47,7 @@ For resources, `--resource` is required and `--args` is ignored.
 |---|---|-------------------------------------------------------------------------------------------------|---|
 | `jira` | `uv` | `["--directory","~/.agents/mcp/mcp-jira","run","mcp-jira"]`                                  | `~/.agents/mcp/mcp-jira` |
 | `chrome-devtools` | `npx` | `["-y","chrome-devtools-mcp@latest"]`                                                           | _(any)_ |
-| `google-drive` | `uv` | `["--directory","~/.agents/mcp/google-drive-mcp","run","google-drive-mcp"]` | `~/.agents/mcp/google-drive-mcp` |
+| `google-drive` | `uv` | `["--directory","~/.agents/mcp/mcp-google-drive","run","mcp-google-drive"]` | `~/.agents/mcp/mcp-google-drive` |
 | `magento2-lsp-mcp` | `magento2-lsp-mcp` | `[]`                                                                                            | _(any)_ |
 
 **Mapping rules:**
@@ -117,8 +117,8 @@ uv run ~/.agents/skills/direct-tool-call/direct-tool-call.py \
 ```bash
 uv run ~/.agents/skills/direct-tool-call/direct-tool-call.py \
   --server-command uv \
-  --server-args "[\"--directory\",\"$HOME/.agents/mcp/google-drive-mcp\",\"run\",\"google-drive-mcp\"]" \
-  --cwd "$HOME/.agents/mcp/google-drive-mcp" \
+  --server-args "[\"--directory\",\"$HOME/.agents/mcp/mcp-google-drive\",\"run\",\"mcp-google-drive\"]" \
+  --cwd "$HOME/.agents/mcp/mcp-google-drive" \
   --tool '<tool_name>' \
   --args '{}'
 ```

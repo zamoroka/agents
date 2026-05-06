@@ -359,7 +359,7 @@ wheels = [
 ]
 
 [[package]]
-name = "google-drive-mcp"
+name = "mcp-google-drive"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

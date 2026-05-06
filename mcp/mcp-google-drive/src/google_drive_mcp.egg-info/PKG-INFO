@@ -1,5 +1,5 @@
 Metadata-Version: 2.4
-Name: google-drive-mcp
+Name: mcp-google-drive
 Version: 0.1.0
 Summary: MCP server for Google Drive document workflows
 Requires-Python: >=3.10
@@ -27,7 +27,7 @@ Current functionality:
 ## Project structure
 
 ```text
-google-drive-mcp/
+mcp-google-drive/
   src/google_drive_mcp/
     auth/
       cli.py              # Manual authorization command
@@ -70,7 +70,7 @@ uv pip install -e .
 Then run initial authorization:
 
 ```bash
-google-drive-mcp-auth
+mcp-google-drive-auth
 ```
 
 This opens a browser consent flow and stores token at:
@@ -80,7 +80,7 @@ This opens a browser consent flow and stores token at:
 ## Run MCP server
 
 ```bash
-google-drive-mcp
+mcp-google-drive
 ```
 
 ## Tool
@@ -113,9 +113,9 @@ Behavior:
       "command": "uv",
       "args": [
         "--directory",
-        "/ABSOLUTE/PATH/TO/google-drive-mcp",
+        "/ABSOLUTE/PATH/TO/mcp-google-drive",
         "run",
-        "google-drive-mcp"
+        "mcp-google-drive"
       ]
     }
   }

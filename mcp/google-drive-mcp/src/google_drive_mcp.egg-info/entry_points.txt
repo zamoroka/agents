@@ -1,3 +1,0 @@
-[console_scripts]
-google-drive-mcp = google_drive_mcp.server:main
-google-drive-mcp-auth = google_drive_mcp.auth.cli:main

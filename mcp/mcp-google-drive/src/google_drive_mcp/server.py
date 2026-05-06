@@ -15,7 +15,7 @@ def configure_logging() -> None:
 
 def build_server() -> FastMCP:
     settings = load_settings()
-    mcp = FastMCP("google-drive-mcp")
+    mcp = FastMCP("mcp-google-drive")
 
     registrars: list[ToolRegistrar] = [
         GoogleDocsTools(settings=settings),
