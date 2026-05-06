@@ -85,13 +85,13 @@ If content type is **meeting-notes**:
    (parse meeting content, find candidate page, propose subfolder, etc.).
 3. The `_raw` file serves as the ingestion source — do not re-download.
 
-### All other content types → placement confirmation
+### All other content types → analyse, edit in `_raw`, then move
 
 If content type is **not** meeting-notes:
 
 1. Read `VAULT_ROOT/AGENTS.md` to load vault structure and Persona 3 placement rules.
 2. Run 1-2 `obsidian search` queries to detect duplicate or closely related pages.
-3. Propose a placement plan and ask the user for confirmation before writing:
+3. Propose a placement plan and ask the user for confirmation before any move:
 
    > **Placement proposal**
    > - **Detected type:** `<content type>`
@@ -103,23 +103,26 @@ If content type is **not** meeting-notes:
    >
    > Confirm placement, or suggest a different folder?
 
-4. Wait for explicit user confirmation before writing.
-5. After approval, write the page with YAML frontmatter (tags, related, summary, source)
-   and the document body **preserved verbatim**. Only permitted cleanup:
-   - Strip markdown export backslash escapes (`\-` → `-`, `4\.` → `4.`, `\!` → `!`, `\<-\>` → `<->`)
-   - Remove duplicate blank lines
+4. Wait for explicit user confirmation before proceeding.
+5. **Edit the `_raw` file in-place** — do not create a new file yet. Apply:
+   - Prepend YAML frontmatter (`tags`, `created`, `source`, `summary`) to the top of the file.
+   - Only permitted body cleanup:
+     - Strip markdown export backslash escapes (`\-` → `-`, `4\.` → `4.`, `\!` → `!`, `\<-\>` → `<->`)
+     - Remove duplicate blank lines
    Do **not** summarize, condense, rewrite, or restructure any body content from the source doc.
    Impersonator applies only to the YAML `summary` value — never to the document body.
-6. Add a `source` YAML property with the original Google Docs URL.
-7. Use `mv` to move the `_raw` file into the approved path (create flow), or merge
-   into an existing page (update flow — do not replace via `mv`).
+6. **Move** the edited `_raw` file to the confirmed destination path using `mv`
+   (create flow). For update flow, merge content into the existing page instead — do not replace via `mv`.
 
 ---
 
 ## Notes
 
-- Always stage to `_raw` first, even if the final write location is immediately clear.
-  This preserves the original markdown and makes recovery straightforward.
+- The canonical flow for every Google Doc is: **download → `_raw` → analyse & edit in `_raw` → move to final path**.
+  Never skip the `_raw` staging step, even when the destination is immediately obvious — it preserves the original
+  markdown and makes recovery straightforward.
+- All edits (frontmatter injection, escaping cleanup) are done on the `_raw` file before the move, so the final
+  destination always receives a fully prepared file.
 - If MCP is unavailable, invoke the `direct-tool-call` skill and continue from Step 2.
 - Write page content in the same language as the source document; keep YAML tags in English.
 

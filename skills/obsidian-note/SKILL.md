@@ -3,7 +3,7 @@ name: obsidian-note
 description: "Obsidian: Creates or updates vault pages (notes, meetings, and todo reports), imports Google Docs markdown, and can save content verbatim in raw mode. Use for note capture, transcript handling, or task-report requests."
 metadata:
   category: "productivity"
-  version: "3.1.0"
+  version: "3.2.0"
 ---
 
 # obsidian-note
