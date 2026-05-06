@@ -304,6 +304,7 @@ Only do a full refresh when:
 - `2026-04-25` Review answers often use first-person framing like `I saw`, `I noticed`, `I value`, and `I would like to see more`.
 - `2026-04-25` When prior cycles exist, call out progress over time and recurring themes like delegation, visibility, and ownership.
 - `2026-04-25` In reviews, fair attribution matters. Less visible early-stage work like momentum, design, architecture, or migration setup should be named when it shaped the outcome.
+- `2026-05-05` Use plain everyday English, not elevated vocabulary. Avoid words like "woven", "carve out", "underrepresented", "codifying", "articulate" — replace with simpler alternatives ("built into", "make time for", "not visible enough", "turning into docs").
 
 ---
 
