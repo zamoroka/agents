@@ -33,6 +33,11 @@ For resources, `--resource` is required and `--args` is ignored.
 > All three flags (`--server-command`, `--server-args`, `--cwd`) are required. Look them up in
 > `~/.agents/skills/direct-tool-call/mcp-config.json` before running the script (see below).
 
+> **`~` is not expanded inside quoted strings.** Any path inside `--server-args` JSON must use
+> `$HOME` with double-quoted strings. `--cwd` unquoted or with double quotes is fine.
+> ✅ `--server-args "[\"--directory\",\"$HOME/.agents/mcp/...\",...]"`
+> ❌ `--server-args '["--directory","~/.agents/mcp/...",...]'`
+
 ## Resolving server flags from `mcp-config.json`
 
 **Always read `~/.agents/skills/direct-tool-call/mcp-config.json` first** to get the correct
@@ -57,8 +62,8 @@ For resources, `--resource` is required and `--args` is ignored.
 ```bash
 uv run ~/.agents/skills/direct-tool-call/direct-tool-call.py \
   --server-command uv \
-  --server-args '["--directory","~/.agents/mcp/jira-mcp","run","jira-mcp"]' \
-  --cwd ~/.agents/mcp/jira-mcp \
+  --server-args "[\"--directory\",\"$HOME/.agents/mcp/jira-mcp\",\"run\",\"jira-mcp\"]" \
+  --cwd "$HOME/.agents/mcp/jira-mcp" \
   --tool fetch_jira_issue_details \
   --args '{"issueKey":"SUNNYR-64"}'
 ```
@@ -68,8 +73,8 @@ uv run ~/.agents/skills/direct-tool-call/direct-tool-call.py \
 ```bash
 uv run ~/.agents/skills/direct-tool-call/direct-tool-call.py \
   --server-command uv \
-  --server-args '["--directory","~/.agents/mcp/jira-mcp","run","jira-mcp"]' \
-  --cwd ~/.agents/mcp/jira-mcp \
+  --server-args "[\"--directory\",\"$HOME/.agents/mcp/jira-mcp\",\"run\",\"jira-mcp\"]" \
+  --cwd "$HOME/.agents/mcp/jira-mcp" \
   --prompt jira_issue_summary_prompt \
   --args '{"issueKey":"SUNNYR-64"}'
 ```
@@ -112,8 +117,8 @@ uv run ~/.agents/skills/direct-tool-call/direct-tool-call.py \
 ```bash
 uv run ~/.agents/skills/direct-tool-call/direct-tool-call.py \
   --server-command uv \
-  --server-args '["--directory","~/.agents/mcp/google-drive-mcp","run","google-drive-mcp"]' \
-  --cwd ~/.agents/mcp/google-drive-mcp \
+  --server-args "[\"--directory\",\"$HOME/.agents/mcp/google-drive-mcp\",\"run\",\"google-drive-mcp\"]" \
+  --cwd "$HOME/.agents/mcp/google-drive-mcp" \
   --tool '<tool_name>' \
   --args '{}'
 ```
