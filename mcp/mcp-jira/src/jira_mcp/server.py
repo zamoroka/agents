@@ -13,7 +13,7 @@ def configure_logging() -> None:
 
 
 def build_server() -> FastMCP:
-    mcp = FastMCP("jira-mcp")
+    mcp = FastMCP("mcp-jira")
     registrars: list[ToolRegistrar] = [JiraTools()]
 
     for registrar in registrars:

@@ -45,7 +45,7 @@ For resources, `--resource` is required and `--args` is ignored.
 
 | `mcpServers` key | `--server-command` | `--server-args`                                                                                 | `--cwd` |
 |---|---|-------------------------------------------------------------------------------------------------|---|
-| `jira` | `uv` | `["--directory","~/.agents/mcp/jira-mcp","run","jira-mcp"]`                                  | `~/.agents/mcp/jira-mcp` |
+| `jira` | `uv` | `["--directory","~/.agents/mcp/mcp-jira","run","mcp-jira"]`                                  | `~/.agents/mcp/mcp-jira` |
 | `chrome-devtools` | `npx` | `["-y","chrome-devtools-mcp@latest"]`                                                           | _(any)_ |
 | `google-drive` | `uv` | `["--directory","~/.agents/mcp/google-drive-mcp","run","google-drive-mcp"]` | `~/.agents/mcp/google-drive-mcp` |
 | `magento2-lsp-mcp` | `magento2-lsp-mcp` | `[]`                                                                                            | _(any)_ |
@@ -62,8 +62,8 @@ For resources, `--resource` is required and `--args` is ignored.
 ```bash
 uv run ~/.agents/skills/direct-tool-call/direct-tool-call.py \
   --server-command uv \
-  --server-args "[\"--directory\",\"$HOME/.agents/mcp/jira-mcp\",\"run\",\"jira-mcp\"]" \
-  --cwd "$HOME/.agents/mcp/jira-mcp" \
+  --server-args "[\"--directory\",\"$HOME/.agents/mcp/mcp-jira\",\"run\",\"mcp-jira\"]" \
+  --cwd "$HOME/.agents/mcp/mcp-jira" \
   --tool fetch_jira_issue_details \
   --args '{"issueKey":"SUNNYR-64"}'
 ```
@@ -73,8 +73,8 @@ uv run ~/.agents/skills/direct-tool-call/direct-tool-call.py \
 ```bash
 uv run ~/.agents/skills/direct-tool-call/direct-tool-call.py \
   --server-command uv \
-  --server-args "[\"--directory\",\"$HOME/.agents/mcp/jira-mcp\",\"run\",\"jira-mcp\"]" \
-  --cwd "$HOME/.agents/mcp/jira-mcp" \
+  --server-args "[\"--directory\",\"$HOME/.agents/mcp/mcp-jira\",\"run\",\"mcp-jira\"]" \
+  --cwd "$HOME/.agents/mcp/mcp-jira" \
   --prompt jira_issue_summary_prompt \
   --args '{"issueKey":"SUNNYR-64"}'
 ```

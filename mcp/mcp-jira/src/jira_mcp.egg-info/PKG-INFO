@@ -1,3 +1,12 @@
+Metadata-Version: 2.4
+Name: mcp-jira
+Version: 0.1.0
+Summary: MCP server that provides Jira tools for pull request workflows
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: mcp[cli]>=1.2.0
+Requires-Dist: httpx>=0.27.2
+
 # Jira MCP (Python)
 
 MCP server that provides Jira tools for pull request workflows.
@@ -13,11 +22,12 @@ MCP server that provides Jira tools for pull request workflows.
 ## Project structure
 
 ```text
-jira-mcp/
+mcp-jira/
   src/jira_mcp/
     services/
       jira_api_client.py       # Jira REST API client with auth fallback
       process_my_timelogs.py   # Timelog aggregation and markdown summary
+      process_issue_summary.py # Issue + MCP prompt message orchestration
       summarize_jira_issue.py  # Jira summary prompt payload generation
     tools/
       base.py                  # ToolRegistrar abstraction
@@ -34,7 +44,7 @@ jira-mcp/
 
 ## Setup
 
-From `mcp/jira-mcp`:
+From `mcp/mcp-jira`:
 
 ```bash
 uv venv
@@ -45,13 +55,13 @@ uv pip install -e .
 ## Run MCP server
 
 ```bash
-uv run jira-mcp
+uv run mcp-jira
 ```
 
 If the script is installed in your active virtual environment, you can also run:
 
 ```bash
-jira-mcp
+mcp-jira
 ```
 
 ## Run MCP dev (inspector UI)
@@ -69,13 +79,13 @@ This starts the server and opens MCP Inspector in your browser so you can call t
 - `fetch_jira_issue_details`: fetches raw Jira issue details by key.
 - `fetch_jira_my_timelogs`: fetches current user timelogs for a rolling period and returns grouped report + markdown summary.
 - `add_jira_timelog`: adds a Jira worklog entry to an issue.
-- `jira_issue_summary_prompt` (prompt): takes Jira issue JSON (for example output of `fetch_jira_issue_details`) and returns prompt messages for a Jira summary.
+- `jira_issue_summary_prompt` (prompt): fetches issue details and returns prompt messages for a Jira summary.
 
 All tools and prompts accept optional config overrides (`jiraBaseUrl`, `jiraApiToken`, `jiraEmail`, `jiraAuthType`).
 
 ## Environment file
 
-Server reads config from `mcp/jira-mcp/.env`.
+Server reads config from `mcp/mcp-jira/.env`.
 If `.env` does not exist, the server creates a placeholder automatically.
 
 Supported variables:
@@ -105,14 +115,14 @@ Example `~/.mcp.json` entry:
 ```json
 {
   "servers": {
-    "jira-mcp": {
+    "mcp-jira": {
       "type": "stdio",
       "command": "uv",
       "args": [
         "--directory",
-        "~/.agents/mcp/jira-mcp",
+        "~/.agents/mcp/mcp-jira",
         "run",
-        "jira-mcp"
+        "mcp-jira"
       ],
       "env": {
         "JIRA_URL": "https://jira.example.com",
@@ -125,4 +135,4 @@ Example `~/.mcp.json` entry:
 }
 ```
 
-If you already use `mcp/jira-mcp/.env`, you can omit `env` values that are already present there.
+If you already use `mcp/mcp-jira/.env`, you can omit `env` values that are already present there.

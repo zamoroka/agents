@@ -10,7 +10,7 @@ metadata:
 
 Generate Jira timelog reports and add Jira worklogs with lightweight issue mapping cache.
 
-This skill must use the Jira MCP server defined in `~/.agents/mcp/jira-mcp`. If the MCP server not available, follow the instructions in `~/.agents/mcp/AGENTS.md` to call tool directly.
+This skill must use the Jira MCP server defined in `~/.agents/mcp/mcp-jira`. If the MCP server not available, follow the instructions in `~/.agents/mcp/AGENTS.md` to call tool directly.
 
 ## When to use
 
@@ -52,7 +52,7 @@ Rules:
 
 ## Jira MCP tools
 
-Use only tools exposed by the `jira-mcp` server documented in `~/.agents/mcp/jira-mcp/README.md`.
+Use only tools exposed by the `mcp-jira` server documented in `~/.agents/mcp/mcp-jira/README.md`.
 
 - Reporting: `fetch_jira_my_timelogs`
 - Log time: `add_jira_timelog`
@@ -90,7 +90,7 @@ Call:
 ```
 
 Pass Jira auth overrides if explicitly provided by user (`jiraBaseUrl`, `jiraApiToken`, `jiraEmail`, `jiraAuthType`).
-If overrides are not provided, rely on `~/.agents/mcp/jira-mcp/.env` as described in `~/.agents/mcp/jira-mcp/README.md`.
+If overrides are not provided, rely on `~/.agents/mcp/mcp-jira/.env` as described in `~/.agents/mcp/mcp-jira/README.md`.
 
 ## Logging workflow
 

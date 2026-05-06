@@ -15,15 +15,15 @@ Examples:
   # Jira
   uv run ~/.agents/skills/direct-tool-call/direct-tool-call.py \\
     --server-command uv \\
-    --server-args '["--directory","~/.agents/mcp/jira-mcp","run","jira-mcp"]' \\
-    --cwd ~/.agents/mcp/jira-mcp \\
+    --server-args '["--directory","~/.agents/mcp/mcp-jira","run","mcp-jira"]' \\
+    --cwd ~/.agents/mcp/mcp-jira \\
     --tool fetch_jira_issue_details --args '{"issueKey":"SUNNYR-64"}'
 
   # Jira prompt
   uv run ~/.agents/skills/direct-tool-call/direct-tool-call.py \\
     --server-command uv \\
-    --server-args '["--directory","~/.agents/mcp/jira-mcp","run","jira-mcp"]' \\
-    --cwd ~/.agents/mcp/jira-mcp \\
+    --server-args '["--directory","~/.agents/mcp/mcp-jira","run","mcp-jira"]' \\
+    --cwd ~/.agents/mcp/mcp-jira \\
     --prompt jira_issue_summary_prompt --args '{"issueKey":"SUNNYR-64"}'
 
   # Read a resource

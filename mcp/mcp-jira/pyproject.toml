@@ -1,5 +1,5 @@
 [project]
-name = "jira-mcp"
+name = "mcp-jira"
 version = "0.1.0"
 description = "MCP server that provides Jira tools for pull request workflows"
 readme = "README.md"
@@ -10,7 +10,7 @@ dependencies = [
 ]
 
 [project.scripts]
-jira-mcp = "jira_mcp.server:main"
+mcp-jira = "jira_mcp.server:main"
 
 [build-system]
 requires = ["setuptools>=68.0"]

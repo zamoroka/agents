@@ -12,18 +12,18 @@ MCP servers in this folder communicate over
 
 ## Servers
 
-### jira-mcp
+### mcp-jira
 
-**Location:** `~/.agents/mcp/jira-mcp`  
-**Entry point:** `uv run jira-mcp`  
-**Docs:** `jira-mcp/README.md`  
-**Config:** `jira-mcp/.env`
+**Location:** `~/.agents/mcp/mcp-jira`  
+**Entry point:** `uv run mcp-jira`  
+**Docs:** `mcp-jira/README.md`  
+**Config:** `mcp-jira/.env`
 
 Run:
 
 ```bash
-uv run jira-mcp
-# from ~/.agents/mcp/jira-mcp
+uv run mcp-jira
+# from ~/.agents/mcp/mcp-jira
 ```
 
 Tools: `fetch_jira_issue_details`, `fetch_jira_my_timelogs`, `add_jira_timelog`  
@@ -59,8 +59,8 @@ When a live MCP tool is unavailable, use the **`direct-tool-call` skill** — se
 If you modify source files, rebuild before running:
 
 ```bash
-# jira-mcp
-cd ~/.agents/mcp/jira-mcp && uv pip install -e .
+# mcp-jira
+cd ~/.agents/mcp/mcp-jira && uv pip install -e .
 
 # chrome-devtools-mcp
 cd ~/.agents/mcp/chrome-devtools-mcp && npm run build

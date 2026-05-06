@@ -1,7 +1,7 @@
 ---
 name: review-pr
 description: "Reviews Bitbucket pull requests, summarizes diffs, and produces a full review artifact. Use when the user asks to review a PR, inspect PR changes, or run a pull request code review."
-allowed-tools: read, grep, glob, pr-fetch, jira-mcp, magento2-lsp-mcp
+allowed-tools: read, grep, glob, pr-fetch, mcp-jira, magento2-lsp-mcp
 metadata:
   version: "2.2.0"
   category: "engineering"
@@ -24,13 +24,13 @@ If default Node is older than 18 and a fetch step fails with `fetch is not defin
 - PR fetch (run in `~/.agents/skills/review-pr/scripts/pr-fetch`):
   - `PROJECT_ROOT="{PROJECT_ROOT}" npx -y node@25 --loader ts-node/esm src/function.ts bitbucket {PR_URL}`
 - Jira tools:
-  - Use connected `jira-mcp` MCP server first.
+  - Use connected `mcp-jira` MCP server first.
   - If not connected/unavailable, use `direct-tool-call` skill to call the server tools
 
 Dependency note for fetch steps:
 - Assume dependencies are already installed.
 - Only run `npm install --prefix ~/.agents/skills/review-pr/scripts` if a fetch command fails due to missing modules/dependencies.
-- Only run `uv pip install -e ~/.agents/mcp/jira-mcp` if Jira MCP startup/tool calls fail due to missing modules/dependencies.
+- Only run `uv pip install -e ~/.agents/mcp/mcp-jira` if Jira MCP startup/tool calls fail due to missing modules/dependencies.
 
 ## Isolated subagent rules
 
@@ -90,7 +90,7 @@ For each missing variable, ask the user to provide the value (ask all missing va
 
 Also ensure `.env.local` is listed in `$PROJECT_ROOT/.gitignore`. If it is not, append `.env.local` to the `.gitignore` file.
 
-Jira MCP credentials are not read from `$PROJECT_ROOT/.env.local`. They must be set in `~/.agents/mcp/jira-mcp/.env` (or passed directly in tool arguments).
+Jira MCP credentials are not read from `$PROJECT_ROOT/.env.local`. They must be set in `~/.agents/mcp/mcp-jira/.env` (or passed directly in tool arguments).
 
 For token requirements and Jira/Bitbucket authentication troubleshooting, use [auth-setup.md](./references/auth-setup.md).
 
@@ -214,9 +214,9 @@ Keep `jira-agent` generic and Jira-focused; all PR/code-review-specific policy s
 
 Subagent hard constraints:
 - Fetch Jira data via this strict order:
-  1. `jira-mcp.fetch_jira_issue_details` for `{ISSUE_KEY}` (primary).
-  2. `jira-mcp.jira_issue_summary_prompt` with `jiraIssueJson` from step 1 (mandatory).
-  3. If `jira-mcp` is unavailable or fails due to MCP connectivity/runtime/tool registration, invoke `direct-tool-call` skill and call the same Jira MCP tools as fallback.
+  1. `mcp-jira.fetch_jira_issue_details` for `{ISSUE_KEY}` (primary).
+  2. `mcp-jira.jira_issue_summary_prompt` with `jiraIssueJson` from step 1 (mandatory).
+  3. If `mcp-jira` is unavailable or fails due to MCP connectivity/runtime/tool registration, invoke `direct-tool-call` skill and call the same Jira MCP tools as fallback.
 - **EXECUTION PROOF REQUIRED:** Must include in response exactly which tools were called and their success/failure status.
 - **NO SHORTCUTS:** Cannot skip jira_issue_summary_prompt. Cannot fabricate or improvise summary.
 - Do not handcraft the summary prompt. The subagent MUST call `jira_issue_summary_prompt` and use the returned prompt messages as the summary contract.
