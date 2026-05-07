@@ -12,7 +12,7 @@
       "command": "uv",
       "args": ["--directory", "~/.agents/mcp/mcp-jira", "run", "mcp-jira"]
     },
-    "magento2-lsp-mcp": {
+    "magento2-lsp": {
       "command": "magento2-lsp-mcp",
       "args": []
     }
