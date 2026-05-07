@@ -87,6 +87,8 @@ JIRA_EMAIL=
 JIRA_AUTH_TYPE=auto
 ```
 
+`JIRA_URL` must be an `https://` URL. Use the canonical Jira base URL directly; redirect fallback from `http://` is not supported.
+
 Precedence:
 1. Tool call arguments
 2. Process environment variables

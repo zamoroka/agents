@@ -49,7 +49,7 @@ async def _request_with_auth(
             **headers,
             "Authorization": auth_header,
         }
-        async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
+        async with httpx.AsyncClient(timeout=60.0, follow_redirects=False) as client:
             response = await client.request(method, url, headers=request_headers, json=payload)
 
         if response.status_code < 200 or response.status_code >= 300:

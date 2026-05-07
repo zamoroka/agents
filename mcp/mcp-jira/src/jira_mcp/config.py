@@ -4,6 +4,7 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal, cast
+from urllib.parse import urlsplit
 
 JiraAuthType = Literal["auto", "bearer", "basic"]
 
@@ -69,6 +70,22 @@ def _read_env_value(key: str, file_values: dict[str, str]) -> str:
     return os.getenv(key, file_values.get(key, ""))
 
 
+def _normalize_jira_base_url(value: str) -> str:
+    normalized = value.strip().rstrip("/")
+    parsed = urlsplit(normalized)
+
+    if parsed.scheme.lower() != "https" or not parsed.netloc:
+        raise ValueError(
+            "Invalid Jira base URL. Use an https:// URL in JIRA_URL or pass jiraBaseUrl with https."
+        )
+    if parsed.query or parsed.fragment:
+        raise ValueError(
+            "Invalid Jira base URL. Do not include query parameters or fragments in JIRA_URL/jiraBaseUrl."
+        )
+
+    return normalized
+
+
 def load_settings(overrides: ConfigOverrides | None = None) -> Settings:
     env_path = ensure_env_file()
     env_values = _parse_env_file(env_path)
@@ -80,6 +97,7 @@ def load_settings(overrides: ConfigOverrides | None = None) -> Settings:
     jira_auth_type = _parse_auth_type(overrides.jira_auth_type) if overrides.jira_auth_type is not None else _parse_auth_type(_read_env_value("JIRA_AUTH_TYPE", env_values))
     if not jira_base_url:
         raise ValueError("Missing Jira base URL. Set JIRA_URL in .env or pass jiraBaseUrl to the tool call.")
+    jira_base_url = _normalize_jira_base_url(jira_base_url)
     if not jira_api_token:
         raise ValueError("Missing Jira API token. Set JIRA_TOKEN in .env or pass jiraApiToken to the tool call.")
 
