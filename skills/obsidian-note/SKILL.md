@@ -62,10 +62,11 @@ and confirmed (or delegated) the write target.
 
 Detect in this order:
 
-1. **Todo report trigger** (`what's on my todo`, `show my tasks`, `what do I need to do`) -> follow [references/todo-report.md](./references/todo-report.md).
-2. **Raw mode trigger** (`raw`, `as-is`, `verbatim`, `just save it`, `don't rewrite`, `no changes`, `don't modify`) -> follow [Raw Mode](#raw-mode).
-3. **Meeting signals** (transcript/meeting wording, dated participant discussion, action-items structure, `1-1`, `sync`, `standup`, `retrospective`, `call with`) -> follow [references/meeting-notes.md](./references/meeting-notes.md).
-4. Otherwise -> continue normal mode below.
+1. **Calendar "what was done" trigger** (`what was done`, `what did I do`, `show my activity`, `update whats done`) -> follow [references/calendar-whats-done.md](./references/calendar-whats-done.md).
+2. **Todo report trigger** (`what's on my todo`, `show my tasks`, `what do I need to do`) -> follow [references/todo-report.md](./references/todo-report.md).
+3. **Raw mode trigger** (`raw`, `as-is`, `verbatim`, `just save it`, `don't rewrite`, `no changes`, `don't modify`) -> follow [Raw Mode](#raw-mode).
+4. **Meeting signals** (transcript/meeting wording, dated participant discussion, action-items structure, `1-1`, `sync`, `standup`, `retrospective`, `call with`) -> follow [references/meeting-notes.md](./references/meeting-notes.md).
+5. Otherwise -> continue normal mode below.
 
 ### Step 4 — Load vault context
 
@@ -125,6 +126,7 @@ Raw mode restrictions:
 
 ## References
 
+- Calendar activity summary workflow: [references/calendar-whats-done.md](./references/calendar-whats-done.md)
 - Todo reporting workflow: [references/todo-report.md](./references/todo-report.md)
 - Meeting notes workflow: [references/meeting-notes.md](./references/meeting-notes.md)
 - Google Drive download and routing: [references/google-drive-usage.md](./references/google-drive-usage.md)
