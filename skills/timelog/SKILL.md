@@ -2,7 +2,7 @@
 name: timelog
 description: "Summarizes Jira timelogs and logs new time entries in Jira. Use when the user asks for time reports or asks to log time (for example 'log 15m to SUNNYR-60' or 'log time on jira to pr PoC')."
 metadata:
-  version: "1.9.0"
+  version: "1.10.0"
   category: "engineering"
 ---
 
@@ -20,6 +20,14 @@ Invoke this skill when user asks for time reports or to log time, for example:
 - "Summarize my Jira logged time by project"
 - "log 15m to SUNNYR-60"
 - "log time on jira to pr PoC"
+- "log time for this week"
+- "log time for today"
+- "log my calendar time"
+
+For calendar-based time logging (last three examples), follow
+[references/calendar-time-logging.md](./references/calendar-time-logging.md).
+Calendar-based approval must be grouped by day, and each calendar event must become its own Jira
+worklog even when multiple events use the same issue key.
 
 ## Cache file
 
@@ -91,6 +99,10 @@ Call:
 
 Pass Jira auth overrides if explicitly provided by user (`jiraBaseUrl`, `jiraApiToken`, `jiraEmail`, `jiraAuthType`).
 If overrides are not provided, rely on `~/.agents/mcp/mcp-jira/.env` as described in `~/.agents/mcp/mcp-jira/README.md`.
+
+After `add_jira_timelog`, require a created worklog response (`id`, `issueId`, `timeSpent`, `started`).
+If the response looks like an issue worklog collection (`startAt`, `maxResults`, `worklogs`) or otherwise does not
+confirm creation, stop the batch, verify/fix the MCP server, and do not keep logging through that path.
 
 ## Logging workflow
 
