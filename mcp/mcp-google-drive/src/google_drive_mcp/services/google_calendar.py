@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 import httpx
 from google.oauth2.credentials import Credentials
@@ -32,7 +32,8 @@ async def fetch_calendar_events(
     Returns:
         List of normalized event dicts.
     """
-    url = CALENDAR_EVENTS_API.format(calendar_id=calendar_id)
+    encoded_calendar_id = quote(calendar_id, safe="")
+    url = CALENDAR_EVENTS_API.format(calendar_id=encoded_calendar_id)
     headers = {"Authorization": f"Bearer {credentials.token}"}
 
     time_min = f"{start_date}T00:00:00Z"

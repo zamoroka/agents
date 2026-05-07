@@ -232,6 +232,36 @@ class TestFetchCalendarEvents:
         params = kwargs["params"]
         assert params["timeMin"] == "2025-06-01T00:00:00Z"
         assert params["timeMax"] == "2025-06-07T23:59:59Z"
+
+    @pytest.mark.asyncio
+    async def test_calendar_id_is_url_encoded(self):
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"items": []}
+        mock_response.raise_for_status = MagicMock()
+
+        mock_client = AsyncMock()
+        mock_client.get = AsyncMock(return_value=mock_response)
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=False)
+
+        mock_creds = MagicMock()
+        mock_creds.token = "fake-token"
+
+        with patch("google_drive_mcp.services.google_calendar.httpx.AsyncClient", return_value=mock_client):
+            await fetch_calendar_events(
+                calendar_id="en.usa#holiday@group.v.calendar.google.com",
+                start_date="2025-06-01",
+                end_date="2025-06-30",
+                credentials=mock_creds,
+            )
+
+        args, _ = mock_client.get.call_args
+        assert args[0].endswith(
+            "calendars/en.usa%23holiday%40group.v.calendar.google.com/events"
+        )
+
+    @pytest.mark.asyncio
+    async def test_filters_cancelled_events(self):
         mock_response = MagicMock()
         mock_response.json.return_value = {
             "items": [
