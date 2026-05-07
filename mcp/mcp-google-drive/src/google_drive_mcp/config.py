@@ -10,6 +10,7 @@ class Settings:
     credentials_path: Path
     token_path: Path
     download_dir: Path
+    calendar_id: str
 
 
 def load_settings() -> Settings:
@@ -18,9 +19,11 @@ def load_settings() -> Settings:
     ).expanduser()
     token_path = Path(os.getenv("GOOGLE_OAUTH_TOKEN_FILE", "./secrets/google-token.json")).expanduser()
     download_dir = Path(os.getenv("GOOGLE_DOCS_DOWNLOAD_DIR", "./downloads")).expanduser()
+    calendar_id = os.getenv("GOOGLE_CALENDAR_ID", "primary")
 
     return Settings(
         credentials_path=credentials_path,
         token_path=token_path,
         download_dir=download_dir,
+        calendar_id=calendar_id,
     )

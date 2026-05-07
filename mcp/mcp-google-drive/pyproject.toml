@@ -1,5 +1,5 @@
 [project]
-name = "google-drive-mcp"
+name = "mcp-google-drive"
 version = "0.1.0"
 description = "MCP server for Google Drive document workflows"
 readme = "README.md"
@@ -12,8 +12,8 @@ dependencies = [
 ]
 
 [project.scripts]
-google-drive-mcp = "google_drive_mcp.server:main"
-google-drive-mcp-auth = "google_drive_mcp.auth.cli:main"
+mcp-google-drive = "google_drive_mcp.server:main"
+mcp-google-drive-auth = "google_drive_mcp.auth.cli:main"
 
 [build-system]
 requires = ["setuptools>=68.0"]

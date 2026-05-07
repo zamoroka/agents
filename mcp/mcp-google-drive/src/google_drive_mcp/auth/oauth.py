@@ -9,7 +9,10 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 
 LOGGER = logging.getLogger(__name__)
 
-SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
+SCOPES = [
+    "https://www.googleapis.com/auth/drive.readonly",
+    "https://www.googleapis.com/auth/calendar.events.readonly",
+]
 
 
 def load_credentials(token_path: Path) -> Credentials | None:

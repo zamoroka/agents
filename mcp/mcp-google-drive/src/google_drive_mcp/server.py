@@ -6,6 +6,7 @@ from mcp.server.fastmcp import FastMCP
 
 from google_drive_mcp.config import load_settings
 from google_drive_mcp.tools.base import ToolRegistrar
+from google_drive_mcp.tools.google_calendar import GoogleCalendarTools
 from google_drive_mcp.tools.google_docs import GoogleDocsTools
 
 
@@ -19,6 +20,7 @@ def build_server() -> FastMCP:
 
     registrars: list[ToolRegistrar] = [
         GoogleDocsTools(settings=settings),
+        GoogleCalendarTools(settings=settings),
     ]
 
     for registrar in registrars:

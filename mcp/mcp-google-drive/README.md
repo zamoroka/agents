@@ -1,10 +1,11 @@
 # Google Drive MCP (Python)
 
-MCP server for Google Drive workflows with an extendable architecture.
+MCP server for Google Drive and Google Calendar workflows with an extendable architecture.
 
 Current functionality:
 - Download a Google Doc by URL and save it as Markdown (`.md`) using Google export endpoint:
   `https://docs.google.com/document/d/{fileId}/export?format=md`
+- Fetch Google Calendar events for a date range and save as JSON
 
 ## Tech choices
 
@@ -23,11 +24,15 @@ mcp-google-drive/
       oauth.py            # Token load/refresh/authorize helpers
     services/
       google_docs.py      # URL parsing + markdown download + save
+      google_calendar.py  # Calendar API v3 event fetching + JSON save
     tools/
       base.py             # ToolRegistrar abstraction
-      google_docs.py      # MCP tool implementation
+      google_docs.py      # MCP tool implementation (docs)
+      google_calendar.py  # MCP tool implementation (calendar)
     config.py             # Env-based settings
     server.py             # MCP entrypoint
+  tests/
+    test_google_calendar.py  # Calendar service unit tests
 ```
 
 ## Prerequisites
@@ -35,6 +40,8 @@ mcp-google-drive/
 - Python 3.10+
 - `uv` recommended (or use pip/venv)
 - Google Cloud project with OAuth Desktop app credentials
+- **Google Calendar API** enabled (for calendar features)
+- **Google Drive API** enabled (for document features)
 
 ## Setup
 
@@ -49,7 +56,13 @@ uv pip install -e .
 ## Google authorization (initial setup)
 
 1. Open Google Cloud Console.
-2. Enable **Google Drive API** for your project.
+2. Enable the required APIs for your project:
+   - **Google Drive API** — for document tools
+   - **Google Calendar API** — for calendar tools
+
+   > **403 Forbidden?** This is the most common cause. Even if the OAuth token has the correct
+   > scopes, each API must be explicitly enabled in the Cloud Console for your project before
+   > it will accept requests.
 3. Create OAuth client credentials of type **Desktop app**.
 4. Download the client secret JSON.
 5. Save it as:
@@ -103,7 +116,7 @@ uv run mcp dev src/google_drive_mcp/server.py
 
 This starts the server and opens the MCP Inspector in your browser, where you can browse and call tools manually.
 
-## Tool
+## Tools
 
 ### `doc_markdown_download`
 
@@ -129,11 +142,49 @@ Behavior:
 - Downloads markdown export from Google Docs
 - Returns markdown content directly to MCP client output (TTY) without saving to a file
 
+### `calendar_get_events`
+
+Inputs:
+- `start_date` (required): Start date in `YYYY-MM-DD` format (inclusive, treated as 00:00:00 UTC)
+- `end_date` (required): End date in `YYYY-MM-DD` format (inclusive, treated as 23:59:59 UTC)
+- `calendar_id` (optional): Calendar ID override. Defaults to `GOOGLE_CALENDAR_ID` env var
+
+Behavior:
+- Fetches events from Google Calendar API v3 for the given date range
+- Handles pagination automatically (supports large date ranges)
+- Filters out cancelled events
+- Saves results as pretty-printed JSON to `downloads/calendar-events-{start}--{end}.json`
+- Returns file path and event count
+
+Output JSON schema (per event):
+```json
+{
+  "id": "string",
+  "title": "string",
+  "startTime": "ISO datetime",
+  "endTime": "ISO datetime",
+  "allDayEvent": true/false,
+  "description": "string",
+  "location": "string",
+  "guests": ["email1", "email2"],
+  "creator": "email",
+  "recurringEvent": true/false,
+  "status": "confirmed"
+}
+```
+
+**Note:** After first adding calendar support, you must re-authorize to grant the `calendar.events.readonly` scope:
+
+```bash
+mcp-google-drive-auth
+```
+
 ## Environment variables
 
 - `GOOGLE_OAUTH_CREDENTIALS_FILE` (default: `./secrets/google-oauth-client.json`)
 - `GOOGLE_OAUTH_TOKEN_FILE` (default: `./secrets/google-token.json`)
 - `GOOGLE_DOCS_DOWNLOAD_DIR` (default: `./downloads`)
+- `GOOGLE_CALENDAR_ID` (default: `primary`) — Calendar ID to fetch events from (e.g. `user@domain.com`)
 
 ## Example Claude Desktop config
 
