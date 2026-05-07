@@ -154,10 +154,13 @@ Different page types have distinct formatting conventions. Always match the targ
 
 - English-dominant, professional, and personal
 - Usually keep the source question order and numbering if the form is numbered
-- Rating questions use `**Rating:** X/5, Label` followed by a 3-4 sentence comment
+- Rating questions use `**Rating:** X/5, Label` followed by a 1-2 sentence comment
 - Open questions usually run 4-6 sentences with concrete examples and observed impact
 - Use first-person framing like `I saw`, `I noticed`, `I value`, `I would like to see more`
 - Default structure: strength first, concrete example next, impact after that, improvement ask last
+- For strength/open-answer review text, prefer a direct evidence chain: what they did, concrete examples, then impact. Avoid broad setup lines like "biggest strength this cycle" when the examples already show the point.
+- Use direct initiative wording in reviews. Prefer phrases like `takes initiative`, `looks for other ways to improve the project`, and `not just doing regular delivery tasks`. Avoid abstract wording like `keeps thinking beyond regular delivery tasks`.
+- Avoid repeating the same named example, project, technology, or phrase across multiple review answers. Keep the strongest concrete example in one answer, then use broader wording elsewhere.
 - If prior cycles exist, mention continuity or progress instead of treating each cycle in isolation
 - Recognition and visibility of contributions are important themes when supported by evidence
 - When relevant, call out what improved since earlier cycles and what still needs work
@@ -300,7 +303,7 @@ Only do a full refresh when:
 - `2026-04-25` Ukrainian reflective writing is more flowing and emotional than English notes. Don't flatten Ukrainian prose into bullet points.
 - `2026-04-25` Task items use emoji markers for priority (🔺 important, ⏬ low) and inline dates (📅, ✅). Preserve this convention.
 - `2026-04-25` Performance reviews are English-dominant, direct, and balanced. Keep praise earned and criticism specific.
-- `2026-04-25` Repeated numeric formatting instructions are stable preferences. Rating answers use `**Rating:** X/5, Label` plus 3-4 sentences. Open questions usually run 4-6 sentences.
+- `2026-04-25` Repeated numeric formatting instructions are stable preferences. Rating answers use `**Rating:** X/5, Label` plus 1-2 sentences. Open questions usually run 4-6 sentences.
 - `2026-04-25` Review answers often use first-person framing like `I saw`, `I noticed`, `I value`, and `I would like to see more`.
 - `2026-04-25` When prior cycles exist, call out progress over time and recurring themes like delegation, visibility, and ownership.
 - `2026-04-25` In reviews, fair attribution matters. Less visible early-stage work like momentum, design, architecture, or migration setup should be named when it shaped the outcome.
