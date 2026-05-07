@@ -93,6 +93,7 @@ Before any drafting, confirm with the user:
 - Check if an **existing review file** is present at the destination path. If so, load it.
 - Check the same person's folder in the current review-type directory for **previous review-cycle files**. If found, load them as historical context before drafting.
 - Also check the other review-type directories for a folder with the same confirmed person slug (for example the same person may exist in both `my-peers/` and `my-manager/`). If matching files exist there, load them as cross-context too.
+- **For Self Review only:** follow [references/calendar-evidence.md](./references/calendar-evidence.md) to fetch calendar events for the review period and generate an evidence list of activities.
 - Use previous reviews to identify recurring strengths, growth areas, unresolved themes, and places where the new review should be more specific or more complete than earlier cycles.
 - Treat previous reviews, including files from other review-type directories, as **context**, not as automatic evidence for the current cycle. Reuse only what the user confirms or what is clearly still applicable, and adjust for the fact that question framing and tone may differ between Peer Reviews, Upward Manager Reviews, Direct Report Reviews, and Self Reviews.
 - Use the **`obsidian-note`** skill to search for prior context about the person (meeting notes, project work, 1:1 notes, past reviews). Skip if the user provides sufficient material or explicitly opts out.
@@ -105,9 +106,9 @@ Start with **one general opening question** about the user's overall thoughts on
 Only after the opening response, ask focused follow-up questions to fill evidence gaps. Target:
 
 - **Rating questions first need scale clarity** — when a question uses a `1-5` scale, explicitly state that **1 is the lowest rating** and **5 is the highest rating**
-- **Rating questions need justification** — collect the numeric score **and** a **3-4 sentence comment** grounded in observed behaviors, actions, or outcomes
+- **Rating questions need concise justification** — collect the numeric score **and** a **1-2 sentence comment** grounded in observed behaviors, actions, or outcomes
 - **Open questions need depth** — draft **4-6 sentences** by default, with concrete examples, impact, and clear observations
-- **Question mapping** — identify which evidence points belong mainly to strengths, growth areas, overall rating, and "anything else" so answers stay distinct
+- **Question mapping** — identify which evidence points belong mainly to strengths, growth areas, overall rating, support, next focus, potential, and "anything else" so answers stay distinct
 - **Concrete examples** — specific projects, deliverables, incidents
 - **Impact** — measurable outcomes, business value, team effect
 - **Growth areas** — skills developed, challenges overcome
@@ -121,9 +122,11 @@ Do not proceed to drafting until there is sufficient evidence for each review qu
 - Use the **`impersonator`** skill before drafting or editing any review/feedback text so the tone matches the user's writing voice.
 - Draft answers one question at a time or in batches as the user prefers.
 - If previous reviews exist, make the new review more extensive where justified: add sharper examples, clearer rationale, and note meaningful changes since the last cycle instead of repeating old wording.
-- Before writing, assign each key point to one primary answer. Do not repeat the same praise, critique, or example across multiple open questions unless the later question is explicitly a summary or adds a clearly different angle.
-- Prefer complementary coverage across answers: strengths should focus on what the person is doing well, growth should focus on what should change or what support is needed, rating should briefly justify the score, and "anything else" should add net-new context such as recognition, trajectory, or final nuance.
-- For rating questions, write a **3-4 sentence comment** after the score unless the user explicitly asks for a shorter format.
+- Before writing, assign each key point to one primary answer. Do not repeat the same praise, critique, named example, project, technology, or phrase across multiple open questions unless the later question is explicitly a summary or adds a clearly different angle.
+- Prefer complementary coverage across answers: rating briefly justifies the score, strengths carry the best concrete example, growth covers friction or visibility gaps, goals cover goal completion only, support covers what Vaimo or the manager should provide, next focus covers what the person should do next, potential covers future scope, and "anything else" adds net-new context such as recognition, trajectory, or final nuance.
+- After drafting, scan the full review section for repeated proper nouns, technologies, project names, and repeated phrases. If a concrete example appears more than once, keep it in the strongest answer and replace other mentions with broader wording.
+- Keep initiative wording concrete and close to the user's phrasing. Prefer `takes initiative`, `looks for other ways to improve the project`, and `not just doing regular delivery tasks`; avoid abstract phrases like `thinking beyond regular delivery tasks`.
+- For rating questions, write a **1-2 sentence comment** after the score unless the user explicitly asks for a longer format.
 - For open questions, write **4-6 sentences** unless the user explicitly asks for a shorter format.
 - Format: question as heading, drafted answer below.
 
@@ -157,10 +160,11 @@ These rules are **mandatory** and override all other instructions:
 3. **No unsupported superlatives.** Avoid inflated praise or criticism without backing evidence.
 4. **Balanced tone.** Be specific, evidence-based, and constructive. Include both strengths and development areas where appropriate.
 5. **User owns the final text.** Every draft is a suggestion — the user decides what gets submitted to HiBob.
-6. **Ratings need rationale.** Do not accept a bare `1-5` score. Every rating answer must include a **3-4 sentence comment** tied to real observations.
+6. **Ratings need rationale.** Do not accept a bare `1-5` score. Every rating answer must include a **1-2 sentence comment** tied to real observations.
 7. **Previous reviews are not proof by themselves.** They can guide continuity and depth, but current-cycle claims still need user confirmation or fresh supporting context.
 8. **Open questions should not be underwritten.** Default to **4-6 sentences** with specific observations unless the user asks for a shorter response.
 9. **Avoid duplicate padding.** Do not repeat the same feedback across multiple answers just to fill space. Reuse a point only when an overall or summary-style question needs a brief callback, or when the second mention adds a materially different angle.
+10. **Avoid repeated anchors.** A named project, technology, event, or concrete example should usually appear once in a review section. If it appears in multiple answers, rewrite so each answer has its own distinct evidence or purpose.
 
 ---
 
@@ -201,7 +205,7 @@ Each review type has different focus areas and tone:
 
 ## Example Q/A Format
 
-For `1-5` rating questions, always make the scale explicit: **1 is the lowest rating and 5 is the highest rating**. Write a **3-4 sentence comment** for rating questions, and **4-6 sentences** for open questions, unless the user asks for a shorter format.
+For `1-5` rating questions, always make the scale explicit: **1 is the lowest rating and 5 is the highest rating**. Write a **1-2 sentence comment** for rating questions, and **4-6 sentences** for open questions, unless the user asks for a different length.
 
 Example:
 
@@ -211,7 +215,7 @@ Example:
 **Rating:** 4/5 — Great
 
 **Justification:**
-They have consistently provided opportunities for growth and have been proactive in offering guidance. I can point to several moments where they helped clarify next steps and supported learning. The support has been meaningful and visible over the cycle. I still see room for improvement in consistency and follow-through, which is why this is a 4 instead of a 5.
+They have consistently provided opportunities for growth and have been proactive in offering guidance. I still see room for improvement in consistency and follow-through, which is why this is a 4 instead of a 5.
 ```
 
 ```markdown
@@ -275,7 +279,7 @@ For `1-5` rating questions, prefer this structure:
 
 **Rating:** [1-5]/5
 
-[3-4 sentence comment]
+[1-2 sentence comment]
 ```
 
 For open questions, prefer a **4-6 sentence** answer with concrete examples and observed impact.

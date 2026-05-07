@@ -90,6 +90,8 @@ Build a compact evidence map before drafting:
 | Growth area/support | Specific gap or opportunity | self/peer/manager/user | high/medium/low | question number |
 
 Resolve repeated themes into one primary place. Avoid padding multiple answers with the same point.
+Before drafting, decide the role of each answer: performance rating, strengths, growth/friction, goal progress, support needed, next focus, potential, and final nuance. Put each concrete example in the one answer where it works hardest.
+After drafting, scan the `Manager review` section for repeated project names, technologies, events, and phrases. A named anchor such as a client, certification, tool, or initiative should usually appear once. If it appears more than once, keep the most concrete use and rewrite the other answers at a higher level.
 
 Source weighting guidance:
 
@@ -116,7 +118,7 @@ Keep the tone:
 
 Default answer lengths:
 
-- Rating questions: rating plus 3-4 concise sentences.
+- Rating questions: rating plus 1-2 concise sentences.
 - Open questions: 4-6 sentences when evidence supports it.
 - Short fields: 2-3 sentences if the question is narrow.
 
@@ -126,6 +128,7 @@ For each answer:
 - Include concrete examples from the current cycle.
 - Explain impact on team, client, delivery, quality, learning, or leadership.
 - Add growth/support/focus recommendations where the question asks for them.
+- Keep answer coverage complementary: strengths carry the strongest example, goals stay about goal completion, support says what Vaimo or the manager should provide, next focus says what the person should do, and "anything else" adds only net-new context.
 - Mark unsupported claims with `[needs validation]` or ask a follow-up before drafting final text.
 
 ## Common Direct Report Review Questions
