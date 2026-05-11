@@ -2,15 +2,15 @@
   "mcpServers": {
     "chrome-devtools": {
       "command": "npx",
-      "args": ["-y", "chrome-devtools-mcp@latest"]
+      "args": ["-y", "chrome-devtools-mcp@latest", "--autoConnect"]
     },
     "google-drive": {
       "command": "uv",
-      "args": ["--directory", "~/.agents/mcp/mcp-google-drive", "run", "mcp-google-drive"]
+      "args": ["--directory", "/Users/zamoroka_pavlo/.agents/mcp/mcp-google-drive", "run", "mcp-google-drive"]
     },
     "jira": {
       "command": "uv",
-      "args": ["--directory", "~/.agents/mcp/mcp-jira", "run", "mcp-jira"]
+      "args": ["--directory", "/Users/zamoroka_pavlo/.agents/mcp/mcp-jira", "run", "mcp-jira"]
     },
     "magento2-lsp": {
       "command": "magento2-lsp-mcp",
