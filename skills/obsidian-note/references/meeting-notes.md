@@ -15,7 +15,7 @@ If meeting content is missing, ask:
 *"Please paste the meeting transcript or notes, and I'll handle the rest."*
 
 If content exists but project context is unclear, ask:
-*"Was this related to a Vaimo project? If yes, which one: ARB, SunnyEurope, SwissSense, Elon, SOGESMA, or general/none?"*
+*"Was this related to a Vaimo project? If yes, which one: prj-ARB, prj-SunnyEurope, prj-SwissSense, etc, or general/none? Is this a direct report 1-1 (Oleksandr, Oleksii, Siemen)?"*
 
 ## Step 1a — Google Docs ingestion via vault `_raw`
 
@@ -64,6 +64,10 @@ Use 1-2 additional searches for aliases/date variants.
 Target root is always:
 `Work/Vaimo/Meeting notes/`
 
+Project subfolders use the `prj-<ProjectName>` naming convention (e.g. `prj-ARB`, `prj-SunnyEurope`, `prj-SwissSense`).
+Direct report 1-1s go into `Direct reports 1-1s/`.
+Non-project subfolders keep their plain names (e.g. `EME all-hands meetings`).
+
 Before writing, provide a very short meeting summary first (2-4 bullets) with the most important discussion points.
 For this summary only, use `kevin-mode` communication style (very terse, high-signal phrasing).
 
@@ -83,8 +87,8 @@ obsidian search query="<project or topic> <key decision>"
 ```
 
 For each relevant page:
-- collect filename for YAML `related`
-- add natural `[[wiki-links]]` where appropriate
+- collect vault-root path for YAML `related`
+- add natural markdown links `[label](vault/root/path.md)` where appropriate
 - if contradictions are detected, stop and ask user how to proceed
 
 ## Step 6 — Derive tags
@@ -98,7 +102,7 @@ Meeting pages must include:
 
 Add when detected:
 - participant tags (CamelCase)
-- project tags (`al-rajhi-bank`, `swisssense`, `sunnyeurope`, `elon`, `sogesma`)
+- project tags (`prj-arb`, `prj-swisssense`, `prj-sunnyeurope`, etc)
 - topic tags (`transcript`, `architecture`, `adr`, `decision`, `magento`, `docker`, `kubernetes`, `redis`, `newrelic`, `gcp`, `ai`)
 
 ## Step 7 — Confirm write plan

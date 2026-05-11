@@ -31,7 +31,7 @@ Examples:
 
 ## Modes
 
-- **Normal mode (default):** full processing with placement, duplicate detection, related pages, wiki-links, and structure matching.
+- **Normal mode (default):** full processing with placement, duplicate detection, related pages, markdown links (vault-root-relative), and structure matching.
 - **Meeting mode:** meeting-specific flow for transcript handling, meeting-folder selection, action-point extraction, and TASKS.md proposal flow.
 - **Raw mode:** save text as-is with minimal YAML frontmatter only; no rewriting, no wiki-links, no impersonation.
 
@@ -65,8 +65,9 @@ Detect in this order:
 1. **Calendar "what was done" trigger** (`what was done`, `what did I do`, `show my activity`, `update whats done`) -> follow [references/calendar-whats-done.md](./references/calendar-whats-done.md).
 2. **Todo report trigger** (`what's on my todo`, `show my tasks`, `what do I need to do`) -> follow [references/todo-report.md](./references/todo-report.md).
 3. **Raw mode trigger** (`raw`, `as-is`, `verbatim`, `just save it`, `don't rewrite`, `no changes`, `don't modify`) -> follow [Raw Mode](#raw-mode).
-4. **Meeting signals** (transcript/meeting wording, dated participant discussion, action-items structure, `1-1`, `sync`, `standup`, `retrospective`, `call with`) -> follow [references/meeting-notes.md](./references/meeting-notes.md).
-5. Otherwise -> continue normal mode below.
+4. **Email-thread signals** (`email thread`, `Subject:`, `From:`, `To:`, forwarded/replied chains, quoted replies) -> follow [references/email-threads.md](./references/email-threads.md).
+5. **Meeting signals** (transcript/meeting wording, dated participant discussion, action-items structure, `1-1`, `sync`, `standup`, `retrospective`, `call with`) -> follow [references/meeting-notes.md](./references/meeting-notes.md).
+6. Otherwise -> continue normal mode below.
 
 ### Step 4 — Load vault context
 
@@ -121,13 +122,14 @@ Goal: save content untouched with minimal frontmatter only.
 
 Raw mode restrictions:
 - do not invoke `impersonator`
-- do not add wiki-links
+- do not add any links
 - do not rewrite/reformat content
 
 ## References
 
 - Calendar activity summary workflow: [references/calendar-whats-done.md](./references/calendar-whats-done.md)
 - Todo reporting workflow: [references/todo-report.md](./references/todo-report.md)
+- Email-thread capture and cleanup workflow: [references/email-threads.md](./references/email-threads.md)
 - Meeting notes workflow: [references/meeting-notes.md](./references/meeting-notes.md)
 - Google Drive download and routing: [references/google-drive-usage.md](./references/google-drive-usage.md)
 
