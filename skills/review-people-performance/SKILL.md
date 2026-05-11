@@ -90,14 +90,20 @@ Before any drafting, confirm with the user:
 
 ### 2. Context Gathering
 
+- **Always start with a vault person-context scan.** After confirming the person, use the
+  **`obsidian-note`** skill to search the vault for context about them before drafting:
+  person profile, 1:1 notes, meeting notes, project notes, task/action records, and past
+  review mentions. Do this even when the user already provides ratings, framing, or
+  enough material to draft. Present the found context summary to the user for validation.
 - Check if an **existing review file** is present at the destination path. If so, load it.
 - Check the same person's folder in the current review-type directory for **previous review-cycle files**. If found, load them as historical context before drafting.
 - Also check the other review-type directories for a folder with the same confirmed person slug (for example the same person may exist in both `my-peers/` and `my-manager/`). If matching files exist there, load them as cross-context too.
 - **For Self Review only:** follow [references/calendar-evidence.md](./references/calendar-evidence.md) to fetch calendar events for the review period and generate an evidence list of activities.
 - Use previous reviews to identify recurring strengths, growth areas, unresolved themes, and places where the new review should be more specific or more complete than earlier cycles.
 - Treat previous reviews, including files from other review-type directories, as **context**, not as automatic evidence for the current cycle. Reuse only what the user confirms or what is clearly still applicable, and adjust for the fact that question framing and tone may differ between Peer Reviews, Upward Manager Reviews, Direct Report Reviews, and Self Reviews.
-- Use the **`obsidian-note`** skill to search for prior context about the person (meeting notes, project work, 1:1 notes, past reviews). Skip if the user provides sufficient material or explicitly opts out.
-- Present a summary of found context to the user for validation.
+- If the Obsidian CLI/search path is unreliable, fall back to targeted `rg` searches inside
+  the vault using the person's full name, first name, folder slug, people tag, and current
+  project/client terms.
 
 ### 3. Targeted Follow-Up Questions
 

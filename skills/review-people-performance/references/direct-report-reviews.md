@@ -45,20 +45,34 @@ If any path is ambiguous, derive it from the workspace conventions and ask only 
 
 ## Context Collection
 
-Load the current cycle file first. Then collect targeted supporting context:
+Start with a vault person-context scan before drafting or asking detailed follow-up questions.
+Do this even when the user already provides ratings or enough notes to draft. Use
+`obsidian-note` search when available, and fall back to targeted `rg` searches in the vault if
+the CLI is unreliable.
 
-- Prior review cycles for the same person in the same folder.
-- Other review-type folders with the same slug if they exist.
-- Relevant Obsidian pages, 1:1 notes, meeting notes, project notes, goals, and task/action records mentioning the person.
-- Any direct user notes from this conversation.
+Search the vault for:
+
+- Person profile.
+- Relevant 1:1 notes.
+- Meeting notes.
+- Project notes.
+- Goals and task/action records mentioning the person.
+- Past review mentions.
 
 Search terms to try:
 
 - Full name and first name.
 - Person slug.
+- People tag, for example `ppl-FirstnameLastname`.
 - Current project/client names from the draft.
 - Terms from goals, key results, and feedback themes.
 - `1:1`, `one-to-one`, `feedback`, `goal`, `promotion`, `support`, `coaching`.
+
+Then load the current cycle file and collect targeted supporting context:
+
+- Prior review cycles for the same person in the same folder.
+- Other review-type folders with the same slug if they exist.
+- Any direct user notes from this conversation.
 
 Use `obsidian-note` conventions when searching or writing in the vault. Read the vault `AGENTS.md` before any write action.
 
