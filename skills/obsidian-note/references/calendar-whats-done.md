@@ -21,13 +21,19 @@ If the MCP server is not available, follow the instructions in `~/.agents/mcp/AG
 
 ### 1. Determine period
 
-Parse the user's request:
+Parse the user's request. Always convert to absolute ISO dates (`YYYY-MM-DD`) using today's date from the system context (do not compute relative offsets mentally — use the `date` command if needed):
 
-- **this week** → start = Monday of current week, end = today + 1
+```bash
+# Monday of current week (ISO week, Monday-start)
+date -v-mon +%Y-%m-%d          # macOS
+# or: date -d "last monday" +%Y-%m-%d  # Linux
+```
+
+- **this week** → start = Monday of current week, end = today + 1 day
 - **last week** → start = Monday of previous week, end = Monday of current week
-- **this month** → start = 1st of current month, end = today + 1
+- **this month** → start = 1st of current month, end = today + 1 day
 - **last month** → start = 1st of previous month, end = 1st of current month
-- **custom** → extract dates from user message
+- **custom** → extract explicit dates from user message; if unclear, ask before fetching
 
 Use ISO format `YYYY-MM-DD`.
 
@@ -107,10 +113,13 @@ Rules for bullets:
 
 ### 6. Find and update the note
 
-1. Search for the "Vaimo whats done" note in the Obsidian vault using `obsidian search`
-2. If found, read the current content to understand structure
-3. Propose appending the new period's summary to the note
-4. If not found, propose creating it in the appropriate Work/Vaimo folder
+1. Search for the "Vaimo whats done" note using context-aware search:
+   ```bash
+   obsidian search:context query="whats done vaimo"
+   ```
+2. If found, run `obsidian outline path="<file>"` to understand structure, then read only if content merging is needed.
+3. Propose appending the new period's summary to the note.
+4. If not found, propose creating it in the appropriate `Work/Vaimo/` folder.
 
 ### 7. Confirm with user
 
@@ -127,4 +136,7 @@ After confirmation:
 - Use the standard obsidian-note write flow (Step 8 from SKILL.md)
 - Append the new period summary below existing content
 - Maintain chronological order (newest at bottom or top — match existing note structure)
-- Update YAML `updated` field
+- Update YAML `updated` field atomically:
+  ```bash
+  obsidian property:set name="updated" value="<ISO datetime>" path="<relative/path/to/note.md>"
+  ```
