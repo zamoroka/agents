@@ -3,7 +3,7 @@ name: obsidian-note
 description: "Obsidian: Creates or updates vault pages (notes, meetings, and todo reports), imports Google Docs markdown, and can save content verbatim in raw mode. Use for note capture, transcript handling, or task-report requests."
 metadata:
   category: "productivity"
-  version: "3.2.0"
+  version: "3.3.0"
 ---
 
 # obsidian-note
@@ -12,8 +12,10 @@ Create or update any wiki page in the Obsidian vault. This is the single note-ma
 
 ## Vault context
 
-- **Vault root and conventions:** always read `AGENTS.md` first. It is the source of truth for vault path, folder structure, personas, naming, and tagging rules.
-- **Template:** `_templates/page.md`
+- **Vault root (`VAULT_ROOT`):** `/Users/zamoroka_pavlo/Library/CloudStorage/GoogleDrive-zapashok0@gmail.com/My Drive/obsidian/zamoroka/`
+  (Google Drive: `obsidian/zamoroka/`). Always operate inside this directory. **Do not search the filesystem for other vaults** — a stale legacy copy may exist (e.g. `~/Downloads/zamoroka/`) and must be ignored.
+- **Conventions:** always read `VAULT_ROOT/AGENTS.md` first. It is the source of truth for folder structure, personas, naming, and tagging rules.
+- **Template:** `VAULT_ROOT/_templates/page.md`
 
 ## When to use
 
@@ -65,19 +67,34 @@ Detect in this order:
 1. **Calendar "what was done" trigger** (`what was done`, `what did I do`, `show my activity`, `update whats done`) -> follow [references/calendar-whats-done.md](./references/calendar-whats-done.md).
 2. **Todo report trigger** (`what's on my todo`, `show my tasks`, `what do I need to do`) -> follow [references/todo-report.md](./references/todo-report.md).
 3. **Raw mode trigger** (`raw`, `as-is`, `verbatim`, `just save it`, `don't rewrite`, `no changes`, `don't modify`) -> follow [Raw Mode](#raw-mode).
-4. **Email-thread signals** (`email thread`, `Subject:`, `From:`, `To:`, forwarded/replied chains, quoted replies) -> follow [references/email-threads.md](./references/email-threads.md).
+4. **Email-thread signals** (`email thread`, ≥2 of {`Subject:`, `From:`, `To:`} on consecutive lines, or `> ` quote chains with email headers, forwarded/replied chains) -> follow [references/email-threads.md](./references/email-threads.md).
 5. **Meeting signals** (transcript/meeting wording, dated participant discussion, action-items structure, `1-1`, `sync`, `standup`, `retrospective`, `call with`) -> follow [references/meeting-notes.md](./references/meeting-notes.md).
 6. Otherwise -> continue normal mode below.
 
 ### Step 4 — Load vault context
 
-Read `VAULT_ROOT/AGENTS.md` before any write action.
+1. Probe CLI availability first: `obsidian vault info=name`. If this fails, fall back to direct markdown edits for all write operations.
+2. Read `VAULT_ROOT/AGENTS.md` before any write action.
+
+**Persona 3 placement summary (from AGENTS.md):**
+- `Work/Vaimo/` — work, professional, Vaimo-related content
+- `Work/Vaimo/Meeting notes/` — meetings (see meeting-notes.md for subfolders)
+- `Work/Vaimo/projects/<prj-Name>/` — project-specific docs
+- `Personal/` — personal life, health, finance, goals
+- `Work/Dev notes/` — technical references, runbooks, ADRs
+- If ambiguous, ask the user before placing.
 
 ### Step 5 — Placement and search
 
 1. Determine folder via Persona 3 decision flow from `AGENTS.md`.
-2. Run 2-3 focused `obsidian search` queries for duplicate detection and related-page discovery.
-3. If contradictions with existing pages are found, stop and ask the user before proceeding.
+2. Run related-page discovery using this layered strategy:
+   a. `obsidian search:context query="<keyword1> <keyword2>"` — 2-3 queries with `search:context` (returns matching lines, not just filenames)
+   b. For each strong hit, run `obsidian backlinks file="<hit>"` and `obsidian links file="<hit>"` to expand the graph
+   c. For each project/topic tag in the incoming note, run `obsidian tag name=<tag> verbose` to surface tag-siblings
+   d. Check `obsidian aliases file="<candidate>"` when a candidate matches by title variant
+3. Rank results: same-day + ≥1 participant/keyword overlap + ≥2 matching tags → **update**; otherwise **create new**.
+4. Cap related-pages list at 5, ranked by overlap signal.
+5. If contradictions with existing pages are found, stop and ask the user before proceeding.
 
 ### Step 6 — Tags and filename
 
@@ -95,10 +112,17 @@ Before writing, ask for confirmation:
 For normal mode only:
 
 1. Invoke `impersonator` before writing.
-2. On update, read current file first and match existing structure exactly (heading/list/checklist/table style, indentation, tone).
+2. On update:
+   - Run `obsidian outline path="<file>"` to get heading structure without reading the full file.
+   - Read current file only when content merging is needed.
+   - Match existing structure exactly (heading/list/checklist/table style, indentation, tone).
 3. Merge without duplication.
-4. Update YAML (`updated`, `related`, and `summary` when meaningful).
+4. Update YAML properties atomically:
+   - `obsidian property:set name="updated" value="<ISO datetime>" path="<file>"`
+   - `obsidian property:read name="related" path="<file>"` then merge and set back
+   - `obsidian property:set name="summary" value="<text>" path="<file>"` when meaningful
 5. Prefer direct markdown edits; use `obsidian append` only for simple single-line entries when faster.
+6. If file was created via direct write (not `obsidian create`), call `obsidian reload` afterward so Obsidian picks up the change immediately.
 
 ### Step 9 — Confirm result
 
@@ -136,4 +160,4 @@ Raw mode restrictions:
 ## Notes
 
 - Write page content in the same language as input; keep YAML tags in English.
-- If Obsidian CLI is unavailable, continue with direct markdown edits.
+- If the CLI probe in Step 4 fails, skip all `obsidian` commands and operate via direct filesystem edits; call `obsidian reload` once available to sync Obsidian's index.

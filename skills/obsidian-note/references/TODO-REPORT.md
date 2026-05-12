@@ -10,11 +10,21 @@ obsidian tasks todo verbose
 
 This is mandatory for todo reports. It returns a flat list of all incomplete `- [ ]` tasks from every note in the vault.
 
+To separately isolate in-progress items (custom status):
+```bash
+obsidian tasks status="/" verbose
+```
+
 ---
 
 ## Step 2 — Filter out wishlist and shopping items
 
-Skip tasks from `Personal/🛒 Wishlist.md`. Signals to exclude:
+Get the wishlist task set to exclude precisely:
+```bash
+obsidian tasks todo path="Personal/🛒 Wishlist.md" verbose
+```
+
+Discard any task whose source file matches this path. Additionally skip these content signals:
 - Shopping URLs (e.g. `olx.ua`, `amazon`, `aliexpress`, `decathlon.ua`, `epicentrk.ua`, `terraincognita.com.ua`, `capricorn.com.ua`, `4camping.com.ua`)
 - Physical product names (gear, clothing, gadgets, appliances, furniture)
 - Financial savings goals with ₴/$ amounts tied to property/investments

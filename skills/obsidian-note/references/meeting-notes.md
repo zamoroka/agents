@@ -45,19 +45,32 @@ Body cleanup rules:
 - keep original language
 - remove external transcript links (for example Granola URLs)
 - convert checklist bullets (`- [ ]`, `- [x]`) to plain bullets (`- ...`)
+- always split transcript walls of text into readable paragraphs separated by blank lines, breaking on speaker shifts and topic transitions (a single paragraph should stay tight — one speaker, one idea)
+- preserve any existing speaker labels verbatim (for example `Me:`, `Them:`, named speakers); do not strip them
+- only attach a speaker name when the transcript itself names them in that turn (e.g. "Thanks, Mohammed —" → next paragraph attributable to Mohammed; an introduction like "I'm Aaqib, product manager" → label that speaker's following lines as Aaqib). Never guess from tone, role, or context alone — if the speaker is not explicitly identified, keep the original label (`Them:` / `Me:`) without a parenthetical name
 
 ## Step 3 — Find candidate page (create vs update)
 
-Run focused searches:
+Run layered searches:
 
 ```bash
-obsidian search query="<meeting date> <participant> <project>"
+# Primary: context-aware search (returns matching lines, not just filenames)
+obsidian search:context query="<meeting date> <participant> <project>"
+
+# Expand graph for strong hits
+obsidian backlinks file="<candidate file>"
+obsidian links file="<candidate file>"
+
+# Check tag siblings for project tag
+obsidian tag name="<prj-tag>" verbose
+
+# Check aliases to catch title variants
+obsidian aliases file="<candidate file>"
 ```
 
-Use 1-2 additional searches for aliases/date variants.
-
-- If same-date page with overlapping participants exists -> update it
-- Otherwise -> create a new page
+Duplicate rule:
+- Same date **+** ≥1 participant overlap **+** ≥2 matching tags → **update**
+- Otherwise → **create new page**
 
 ## Step 4 — Propose subfolder (required)
 
@@ -80,15 +93,23 @@ Ask user to approve the subfolder. Do not write before approval.
 
 ## Step 5 — Related pages and contradictions
 
-Search related context:
+Search related context using layered strategy:
 
 ```bash
-obsidian search query="<project or topic> <key decision>"
+# Line-level context for key topics and decisions
+obsidian search:context query="<project or topic> <key decision>"
+
+# Tag-siblings for any project tag detected in Step 6
+obsidian tag name="<prj-tag>" verbose
+
+# Graph expansion for top hits
+obsidian backlinks file="<top hit>"
 ```
 
 For each relevant page:
 - collect vault-root path for YAML `related`
 - add natural markdown links `[label](vault/root/path.md)` where appropriate
+- cap related-pages list at 5, ranked by overlap (tag matches + keyword matches)
 - if contradictions are detected, stop and ask user how to proceed
 
 ## Step 6 — Derive tags
@@ -128,24 +149,24 @@ Rules:
 - keep transcript body raw except checklist normalization
 - frontmatter follows `AGENTS.md` wiki format (`tags`, `created`, `updated`, `related`, `summary`)
 - when content was imported from a Google Docs URL, add a `source` YAML property with the original document URL
-- for updates, read existing file first and merge without duplication
+- for updates: run `obsidian outline path="<file>"` first to get heading structure, then read and merge without duplication
 
-Google Docs create flow (must use `mv`):
+Google Docs create flow (use `obsidian move`, not `mv`):
 
 1. Start from the downloaded `_raw` file.
-2. Prepend YAML frontmatter directly to that file.
-3. Move it into the approved final location using `mv`.
-
-Example:
+2. Prepend YAML frontmatter directly to that `_raw` file.
+3. Move it to the approved final location using the CLI so wikilinks stay intact:
 
 ```bash
-mv "VAULT_ROOT/_raw/<doc-id>.md" "VAULT_ROOT/Work/Vaimo/Meeting notes/<approved subfolder>/YYYY-mm-dd <meeting title>.md"
+obsidian move path="_raw/<doc-id>.md" to="Work/Vaimo/Meeting notes/<approved subfolder>/YYYY-mm-dd <meeting title>.md"
 ```
+
+4. Call `obsidian reload` if the move was done via `mv` fallback (CLI unavailable).
 
 For Google Docs updates:
 - use `_raw` file as analysis input
 - merge new content into the existing target meeting page
-- do not replace the existing file via `mv`
+- do not replace the existing file via move
 
 ## Step 9 — Action points and TASKS.md
 
@@ -155,6 +176,11 @@ Also extract todos assigned to Pavlo (or unassigned) and prepare TASKS.md-ready 
 
 Show a concrete preview and ask approval before touching `TASKS.md`.
 Only modify `TASKS.md` after explicit user approval.
+
+To mark a previously captured action item done in an old meeting note without rewriting the file:
+```bash
+obsidian task ref="<relative/path/to/note.md>:<line>" done
+```
 
 ## Step 10 — Confirm result
 

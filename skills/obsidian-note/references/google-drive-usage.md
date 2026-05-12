@@ -90,7 +90,9 @@ If content type is **meeting-notes**:
 If content type is **not** meeting-notes:
 
 1. Read `VAULT_ROOT/AGENTS.md` to load vault structure and Persona 3 placement rules.
-2. Run 1-2 `obsidian search` queries to detect duplicate or closely related pages.
+2. Run layered search to detect duplicate or closely related pages:
+   - `obsidian search:context query="<key title terms>"` (1-2 queries)
+   - For top hits: `obsidian tag name=<detected-tag> verbose` and `obsidian backlinks file="<hit>"`
 3. Propose a placement plan and ask the user for confirmation before any move:
 
    > **Placement proposal**
@@ -111,18 +113,23 @@ If content type is **not** meeting-notes:
      - Remove duplicate blank lines
    Do **not** summarize, condense, rewrite, or restructure any body content from the source doc.
    Impersonator applies only to the YAML `summary` value — never to the document body.
-6. **Move** the edited `_raw` file to the confirmed destination path using `mv`
-   (create flow). For update flow, merge content into the existing page instead — do not replace via `mv`.
+6. **Move** the edited `_raw` file to the confirmed destination path using the Obsidian CLI so wikilinks stay intact:
+   ```bash
+   obsidian move path="_raw/<doc-id>.md" to="<Folder/Subfolder/YYYY-mm-dd Title.md>"
+   ```
+   (create flow). For update flow, merge content into the existing page instead — do not replace via move.
+   If CLI is unavailable and `mv` is used as fallback, call `obsidian reload` afterward.
 
 ---
 
 ## Notes
 
-- The canonical flow for every Google Doc is: **download → `_raw` → analyse & edit in `_raw` → move to final path**.
+- The canonical flow for every Google Doc is: **download → `_raw` → analyse & edit in `_raw` → `obsidian move` to final path**.
   Never skip the `_raw` staging step, even when the destination is immediately obvious — it preserves the original
   markdown and makes recovery straightforward.
 - All edits (frontmatter injection, escaping cleanup) are done on the `_raw` file before the move, so the final
   destination always receives a fully prepared file.
+- Always use `obsidian move` (not `mv`) — this keeps wikilinks pointing to the file intact across the vault.
 - If MCP is unavailable, invoke the `direct-tool-call` skill and continue from Step 2.
 - Write page content in the same language as the source document; keep YAML tags in English.
 
