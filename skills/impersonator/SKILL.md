@@ -1,7 +1,7 @@
 ---
 name: impersonator
-version: 2.2.0
-description: "Preserves tone of voice and writing style when creating or modifying wiki pages, review drafts, and other personal writing. Invoke whenever content needs to be written or edited to match the user's style."
+version: 2.3.0
+description: "Preserves the user's tone and writing style for any text the user will save in their voice or share with others — wiki pages, review drafts, emails, Slack messages, questions for vendors/clients, brainstorms meant for an external audience. Invoke before producing the first draft, not after the user asks for a rewrite."
 metadata:
   category: "productivity"
 ---
@@ -18,12 +18,15 @@ Operates in two modes:
 
 ## When to use
 
-**Runtime mode** — invoke before:
-- Writing any new wiki page content
-- Modifying existing page content
-- Summarising, paraphrasing, or expanding notes
-- Generating the `summary` YAML property
-- Writing or editing performance reviews, self-reviews, feedback drafts, or similar personal writing
+**Runtime mode** — invoke before producing the *first draft* of:
+- Any new wiki page content
+- Modifications to existing page content
+- Summaries, paraphrases, or expansions of notes
+- The `summary` YAML property
+- Performance reviews, self-reviews, feedback drafts, or similar personal writing
+- **Outbound text the user will hand to other people in their voice** — emails, Slack messages, questions for vendors/clients, brainstorm lists meant for an external audience, anything where the recipient will read it as if the user wrote it
+
+Trigger early: if the artifact will leave the user's hands in their voice, run impersonator on the first draft. Don't ship a generic draft and wait for the user to ask for a rewrite.
 
 Do NOT apply this skill to:
 - YAML frontmatter (tags, values, keep those structured)
