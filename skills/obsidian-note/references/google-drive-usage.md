@@ -1,7 +1,6 @@
 # Google Drive — Download and Route Workflow
 
-Use this workflow whenever the user provides a Google Docs URL
-(`https://docs.google.com/document/d/...`) as source content.
+Use this workflow whenever the user provides a Google Docs URL (`https://docs.google.com/document/d/...`) as source content.
 
 ## Tool
 
@@ -11,16 +10,17 @@ Use this workflow whenever the user provides a Google Docs URL
 | Tools | `doc_get_metadata`, `doc_markdown_download` |
 | Fallback | `direct-tool-call` skill (when MCP is unavailable) |
 
-**Never use `doc_markdown_output_tty`** for vault imports — it does not persist files
-to the `_raw` staging directory.
+**Never use `doc_markdown_output_tty`** for vault imports — it streams the markdown to the terminal without persisting it to `_raw`.
+
+_Why this matters: the entire recovery story for botched imports depends on having the unedited export on disk. 
+If something goes wrong mid-flow (wrong  placement, bad cleanup, partial frontmatter), `_raw/<doc-id>.md` is what we roll back to. A TTY-only output means there is nothing to roll back to._
 
 ---
 
 ## Step 0 — Fetch document metadata
 
-Before downloading, call `doc_get_metadata` to get the document title and dates.
-The title often contains the review period, project name, or other context needed to
-derive a meaningful filename and vault placement.
+Before downloading, call `doc_get_metadata` to get the document title and dates. 
+The title often contains the review period, project name, or other context needed to derive a meaningful filename and vault placement.
 
 ```
 doc_url : <source Google Doc URL>
@@ -33,12 +33,16 @@ Use `name` as the primary signal for:
 - File name (cleaned, lowercase-hyphenated)
 - Content type detection (see Step 2)
 
-If `doc_get_metadata` is unavailable, skip this step and proceed to Step 1. In that
-case, ask the user for the document title/period if it cannot be inferred from content.
+If `doc_get_metadata` is unavailable, skip this step and proceed to Step 1. In that case, ask the user for the document title/period if it cannot be inferred from content.
 
 ---
 
 ## Step 1 — Download to `_raw`
+
+_Why `_raw` exists as a staging area: 
+Google Docs markdown export is noisy (backslash escapes, blank-line bloat, inline image placeholders). 
+Doing the cleanup in place inside the final folder would mean the user's vault sees intermediate states. 
+Staging in `_raw` keeps the final destination clean and preserves the unedited export for recovery._
 
 Call `doc_markdown_download` for every Google Docs URL in the input:
 
@@ -57,8 +61,7 @@ Keep the downloaded file as the canonical input for the next steps.
 
 ## Step 2 — Detect document content type
 
-Analyse the downloaded markdown and classify the document into one of the
-following content types:
+Analyse the downloaded markdown and classify the document into one of the following content types:
 
 | Content type | Detection signals |
 |---|---|
@@ -81,8 +84,7 @@ If confident, proceed automatically. If ambiguous between two types, ask:
 If content type is **meeting-notes**:
 
 1. The file is already staged in `VAULT_ROOT/_raw/` from Step 1.
-2. Continue with **Step 2** of [meeting-notes.md](./meeting-notes.md)
-   (parse meeting content, find candidate page, propose subfolder, etc.).
+2. Continue with **Step 2** of [meeting-notes.md](./meeting-notes.md) (parse meeting content, find candidate page, propose subfolder, etc.).
 3. The `_raw` file serves as the ingestion source — do not re-download.
 
 ### All other content types → analyse, edit in `_raw`, then move
@@ -125,10 +127,8 @@ If content type is **not** meeting-notes:
 ## Notes
 
 - The canonical flow for every Google Doc is: **download → `_raw` → analyse & edit in `_raw` → `obsidian move` to final path**.
-  Never skip the `_raw` staging step, even when the destination is immediately obvious — it preserves the original
-  markdown and makes recovery straightforward.
-- All edits (frontmatter injection, escaping cleanup) are done on the `_raw` file before the move, so the final
-  destination always receives a fully prepared file.
+  Never skip the `_raw` staging step, even when the destination is immediately obvious — it preserves the original markdown and makes recovery straightforward.
+- All edits (frontmatter injection, escaping cleanup) are done on the `_raw` file before the move, so the final destination always receives a fully prepared file.
 - Always use `obsidian move` (not `mv`) — this keeps wikilinks pointing to the file intact across the vault.
 - If MCP is unavailable, invoke the `direct-tool-call` skill and continue from Step 2.
 - Write page content in the same language as the source document; keep YAML tags in English.

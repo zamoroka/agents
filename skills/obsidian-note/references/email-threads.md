@@ -6,6 +6,8 @@ Use this reference when the user asks to save an email thread, forwarded/replied
 
 Preserve the real email content, but make the note readable as a wiki page. Treat cleanup as structure cleanup, not rewriting.
 
+_Why this distinction matters: the user often comes back to email threads to verify what was actually said (legal, commercial, technical commitments). If wording drifts, the note becomes useless as a record._
+
 ## Placement
 
 - Put client/project email threads under the relevant project `Communications/` folder when it exists or when the user names it.
@@ -55,10 +57,12 @@ Sender Role
 Rules:
 
 - Flatten quoted replies into separate email blocks.
+  _Why: nested quotes make threads unreadable on the third or fourth reply. Each email as its own block lets the user scan the conversation linearly._
 - Order blocks chronologically when the thread makes that clear.
 - Keep `From`, `To`, `Cc`, and `Date` for each email when available.
 - Use `---` between email blocks.
 - Mark the main email body with markdown blockquote markers (`>`), including salutation, body, and lists.
+  _Why: the blockquote visually separates "what was said" from metadata and signatures, and makes the message robust to future re-rendering or extraction._
 - Keep sign-off lines like `Regards`, `Thank you`, and `Best Regards` outside the blockquote together with cleaned signature name/title lines.
 - Keep email metadata outside the blockquote.
 - Do not keep nested quote wrappers or `On <date>, <person> wrote:` wrapper lines after flattening.
@@ -92,3 +96,86 @@ Before finishing, check:
 - main email body lines are marked with `>` while metadata, sign-offs, and cleaned signatures are not
 - each email block has the available metadata
 - `git diff --check` passes when the vault is under git
+
+## Worked example: forwarded reply → cleaned wiki block
+
+Demonstrates flattening, signature cleanup, and the blockquote rule.
+
+**Input (raw forwarded email body):**
+
+```
+---------- Forwarded message ---------
+From: Max Schmidt <max.schmidt@arb.example>
+Date: Mon, May 4, 2026 at 3:14 PM
+Subject: Re: Marketplace cutover — UAT status
+To: Pavlo Zamoroka <pavlo.zamoroka@vaimo.com>
+Cc: Ivan Bordiuh <ivan@vaimo.com>
+
+Hi Pavlo,
+
+Confirmed — we'll push the cutover by one sprint. Webkul patch is
+in our UAT next Tuesday. I'll send updated steerco slides EOD.
+
+Best Regards,
+Max Schmidt
+Head of Digital, ARB
+[inline-image: arb-logo.png]
+www.arb.example | Legal disclaimer: This email is confidential…
+
+On Mon, May 4, 2026 at 10:02 AM, Pavlo Zamoroka <pavlo.zamoroka@vaimo.com> wrote:
+> Hi Max,
+>
+> Heads up — Webkul confirmed the rounding errors are in their core. ETA
+> ~2 weeks. I want to push the cutover to next sprint. OK with you?
+>
+> Thanks,
+> Pavlo
+```
+
+**Output (cleaned wiki block):**
+
+```markdown
+# 2026-05-04 Marketplace cutover — UAT status
+
+**Subject:** Marketplace cutover — UAT status
+
+## Email 1: 2026-05-04 10:02
+
+**From:** Pavlo Zamoroka <pavlo.zamoroka@vaimo.com>
+**To:** Max Schmidt <max.schmidt@arb.example>
+**Date:** Mon, May 4, 2026 at 10:02 AM
+
+> Hi Max,
+>
+> Heads up — Webkul confirmed the rounding errors are in their core. ETA
+> ~2 weeks. I want to push the cutover to next sprint. OK with you?
+
+Thanks,
+Pavlo
+
+---
+
+## Email 2: 2026-05-04 15:14
+
+**From:** Max Schmidt <max.schmidt@arb.example>
+**To:** Pavlo Zamoroka <pavlo.zamoroka@vaimo.com>
+**Cc:** Ivan Bordiuh <ivan@vaimo.com>
+**Date:** Mon, May 4, 2026 at 3:14 PM
+
+> Hi Pavlo,
+>
+> Confirmed — we'll push the cutover by one sprint. Webkul patch is
+> in our UAT next Tuesday. I'll send updated steerco slides EOD.
+
+Best Regards,
+Max Schmidt
+Head of Digital, ARB
+```
+
+What changed:
+- Nested quoted reply hoisted to its own block (Email 1), chronological order
+- Inline image placeholder, legal disclaimer, and website link removed from signature
+- `From`/`To`/`Cc`/`Date` kept verbatim per block
+- Body wrapped in `>` blockquote; sign-offs and signature kept outside
+- `On <date>, <person> wrote:` wrapper dropped after flattening
+- Subject kept once at the top, not repeated per block

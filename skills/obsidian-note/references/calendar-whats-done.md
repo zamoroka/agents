@@ -21,21 +21,25 @@ If the MCP server is not available, follow the instructions in `~/.agents/mcp/AG
 
 ### 1. Determine period
 
-Parse the user's request. Always convert to absolute ISO dates (`YYYY-MM-DD`) using today's date from the system context (do not compute relative offsets mentally — use the `date` command if needed):
+Use the bundled script — it owns the date math so the prose stays
+locale-safe and the model does not have to do arithmetic in its head:
 
 ```bash
-# Monday of current week (ISO week, Monday-start)
-date -v-mon +%Y-%m-%d          # macOS
-# or: date -d "last monday" +%Y-%m-%d  # Linux
+python3 /Users/zamoroka_pavlo/.agents/skills/obsidian-note/scripts/compute_period.py this-week
+# {"start": "2026-05-11", "end": "2026-05-13"}
 ```
 
-- **this week** → start = Monday of current week, end = today + 1 day
-- **last week** → start = Monday of previous week, end = Monday of current week
-- **this month** → start = 1st of current month, end = today + 1 day
-- **last month** → start = 1st of previous month, end = 1st of current month
+Supported periods: `this-week`, `last-week`, `this-month`, `last-month`,
+`custom --start YYYY-MM-DD --end YYYY-MM-DD`.
+
+Semantics:
+- **this-week** → start = Monday of current week, end = today + 1 day (exclusive)
+- **last-week** → start = Monday of previous week, end = Monday of current week
+- **this-month** → start = 1st of current month, end = today + 1 day
+- **last-month** → start = 1st of previous month, end = 1st of current month
 - **custom** → extract explicit dates from user message; if unclear, ask before fetching
 
-Use ISO format `YYYY-MM-DD`.
+_Why a script: hand-rolled `date` arithmetic differs between macOS and Linux and is a frequent source of off-by-one errors when computing "last Monday" near a Sunday._
 
 ### 2. Fetch calendar events
 
@@ -136,7 +140,8 @@ After confirmation:
 - Use the standard obsidian-note write flow (Step 8 from SKILL.md)
 - Append the new period summary below existing content
 - Maintain chronological order (newest at bottom or top — match existing note structure)
-- Update YAML `updated` field atomically:
+- Update YAML `updated` field atomically with explicit datetime type:
   ```bash
-  obsidian property:set name="updated" value="<ISO datetime>" path="<relative/path/to/note.md>"
+  obsidian property:set name="updated" value="<ISO datetime>" type=datetime path="<relative/path/to/note.md>"
   ```
+  _Why `type=datetime`: without it Obsidian stores the value as plain text, so the property won't render with date formatting and Database.base date-range views will skip it._

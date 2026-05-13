@@ -1,0 +1,35 @@
+{
+  "skill_name": "obsidian-note",
+  "evals": [
+    {
+      "id": 1,
+      "name": "meeting-transcript-from-paste",
+      "prompt": "save this standup transcript as a meeting note — was with Ivan Bordiuh and Bartosz today about the ARB webkul integration, key decision was to push the marketplace cutover to next sprint because UAT keeps failing on tax calc:\n\nMe: Hey, how's the tax calculation going?\nIvan: We're still seeing rounding errors on multi-vendor carts. Webkul confirmed it's their core, they'll patch.\nBartosz: ETA?\nIvan: Two weeks at least.\nMe: OK let's push the cutover. I'll update the steerco.\n\naction items: Pavlo to update steerco deck, Ivan to file Webkul ticket",
+      "expected_output": "A new meeting note under Work/Vaimo/projects/ARB/meeting-notes/ (or Work/Vaimo/Meeting notes/<ARB-related subfolder>/) with today's date, participant + project tags, action items as plain bullets, and a TASKS.md preview proposal."
+    },
+    {
+      "id": 2,
+      "name": "todo-report-arb-this-week",
+      "prompt": "what's on my plate this week — focus me on ARB stuff, the rest can be light",
+      "expected_output": "Grouped todo report with an ARB / Al-Rajhi Bank section listed first or highlighted, dated tasks sorted by due date, wishlist items excluded."
+    },
+    {
+      "id": 3,
+      "name": "raw-mode-brain-dump",
+      "prompt": "save this raw, don't rewrite anything — these are rough notes from the cab ride, capture as-is:\n\nidea — talk to siemen about taking over the SunnyEurope CR pipeline if he's open, frees me up for ARB. also need to ping max re. the runbook draft, he hasn't responded in 4 days. third thing — onboarding doc for new EME architect needs my section by friday.",
+      "expected_output": "Note saved verbatim with minimal frontmatter (tags + created), placed under Personal/ or Work/Vaimo/ depending on classification. No rewriting, no impersonator, no wiki-links."
+    },
+    {
+      "id": 4,
+      "name": "google-doc-import-meeting",
+      "prompt": "file this in my vault as a meeting note please: https://docs.google.com/document/d/EXAMPLE_DOC_ID/edit — it's the EME leadership sync from yesterday",
+      "expected_output": "Doc downloaded to VAULT_ROOT/_raw/, classified as meeting-notes, then moved via `obsidian move` to Work/Vaimo/Meeting notes/EME Engineering Leadership and Strategy Discussions/<date> <title>.md with proper frontmatter (including source URL)."
+    },
+    {
+      "id": 5,
+      "name": "calendar-whats-done-last-week",
+      "prompt": "update my whats done note for last week",
+      "expected_output": "Fetched calendar events for last week's Mon-Mon range using compute_period.py, categorized into Sales/Organisational/People lead/Certifications/Projects, appended to the Vaimo whats done note with the updated YAML field set via property:set."
+    }
+  ]
+}

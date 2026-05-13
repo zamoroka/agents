@@ -2,9 +2,28 @@
 
 Use this workflow when meeting signals are detected by `obsidian-note`.
 
+## Contents
+
+- [Scope](#scope)
+- [Step 1 — Gather missing context](#step-1--gather-missing-context)
+- [Step 1a — Google Docs ingestion via vault `_raw`](#step-1a--google-docs-ingestion-via-vault-_raw)
+- [Step 2 — Parse meeting content](#step-2--parse-meeting-content)
+- [Step 3 — Find candidate page (create vs update)](#step-3--find-candidate-page-create-vs-update)
+- [Step 4 — Propose target folder (required)](#step-4--propose-target-folder-required)
+- [Step 5 — Related pages and contradictions](#step-5--related-pages-and-contradictions)
+- [Step 6 — Derive tags](#step-6--derive-tags)
+- [Step 7 — Confirm write plan](#step-7--confirm-write-plan)
+- [Step 8 — Write/update meeting page](#step-8--writeupdate-meeting-page)
+- [Step 9 — Action points and TASKS.md](#step-9--action-points-and-tasksmd)
+- [Step 10 — Confirm result](#step-10--confirm-result)
+- [Recovery rule — note saved too early](#recovery-rule--note-saved-too-early)
+- [Cleanup example: transcript wall-of-text → paragraphs](#cleanup-example-transcript-wall-of-text--paragraphs)
+
 ## Scope
 
-- Creates or updates pages under `Work/Vaimo/Meeting notes/`
+- Creates or updates meeting pages in either:
+  - `Work/Vaimo/projects/<ProjectName>/meeting-notes/` — for any project-scoped meeting (ARB, SunnyEurope, SwissSense, etc)
+  - `Work/Vaimo/Meeting notes/` — for non-project meetings only (leadership 1-1s, EME-wide, `Direct reports 1-1s/`)
 - Works for pasted meeting notes and Google Docs transcripts
 - For Google Docs, the download and content-type detection is handled by [google-drive-usage.md](./google-drive-usage.md); this workflow receives the staged `_raw` file as input
 - Keeps transcript text mostly raw while enforcing meeting-note rules
@@ -44,10 +63,13 @@ Extract:
 Body cleanup rules:
 - keep original language
 - remove external transcript links (for example Granola URLs)
+  _Why: these expire and leak privately-shared meeting recordings into the vault._
 - convert checklist bullets (`- [ ]`, `- [x]`) to plain bullets (`- ...`)
+  _Why: action items come from a dedicated extraction step (Step 9). Checklists in the transcript body would double up with `TASKS.md` and pollute `obsidian tasks todo`._
 - always split transcript walls of text into readable paragraphs separated by blank lines, breaking on speaker shifts and topic transitions (a single paragraph should stay tight — one speaker, one idea)
 - preserve any existing speaker labels verbatim (for example `Me:`, `Them:`, named speakers); do not strip them
 - only attach a speaker name when the transcript itself names them in that turn (e.g. "Thanks, Mohammed —" → next paragraph attributable to Mohammed; an introduction like "I'm Aaqib, product manager" → label that speaker's following lines as Aaqib). Never guess from tone, role, or context alone — if the speaker is not explicitly identified, keep the original label (`Them:` / `Me:`) without a parenthetical name
+  _Why: misattributing words to a participant can affect a real-world relationship. Better to leave anonymous than to guess wrong._
 
 ## Step 3 — Find candidate page (create vs update)
 
@@ -72,24 +94,28 @@ Duplicate rule:
 - Same date **+** ≥1 participant overlap **+** ≥2 matching tags → **update**
 - Otherwise → **create new page**
 
-## Step 4 — Propose subfolder (required)
+## Step 4 — Propose target folder (required)
 
-Target root is always:
-`Work/Vaimo/Meeting notes/`
+Two possible roots:
+- **Project meeting** → `Work/Vaimo/projects/<ProjectName>/meeting-notes/` (e.g. `Work/Vaimo/projects/ARB/meeting-notes/`)
+- **Non-project meeting** → `Work/Vaimo/Meeting notes/<subfolder>/`
+  - Direct report 1-1s → `Direct reports 1-1s/`
+  - Other non-project subfolders keep their plain names (e.g. `EME all-hands meetings`, `EME Engineering Leadership and Strategy Discussions`)
 
-Project subfolders use the `prj-<ProjectName>` naming convention (e.g. `prj-ARB`, `prj-SunnyEurope`, `prj-SwissSense`).
-Direct report 1-1s go into `Direct reports 1-1s/`.
-Non-project subfolders keep their plain names (e.g. `EME all-hands meetings`).
+Decision rule:
+- If the meeting is clearly scoped to a known project (ARB, SunnyEurope, SwissSense, Elon, SOGESMA, etc.) → use the project's `meeting-notes/` folder
+- If it's a leadership 1-1, EME-wide sync, direct report 1-1, or cross-project discussion → use `Work/Vaimo/Meeting notes/<subfolder>/`
+- If the project is new (no folder exists yet) → propose creating `Work/Vaimo/projects/<NewProject>/meeting-notes/` along with `README.md` and `TASKS.md` per AGENTS.md conventions
 
 Before writing, provide a very short meeting summary first (2-4 bullets) with the most important discussion points.
 For this summary only, use `kevin-mode` communication style (very terse, high-signal phrasing).
 
 Then propose:
-1. suggested subfolder
+1. suggested target path (full vault-root-relative path including filename)
 2. short rationale
 3. 1-3 alternatives
 
-Ask user to approve the subfolder. Do not write before approval.
+Ask user to approve the target. Do not write before approval.
 
 ## Step 5 — Related pages and contradictions
 
@@ -141,12 +167,14 @@ Meeting-note approval shortcut:
 
 ## Step 8 — Write/update meeting page
 
-Path format:
-`Work/Vaimo/Meeting notes/<approved subfolder>/YYYY-mm-dd <meeting title>.md`
+Path format (one of):
+- Project meeting → `Work/Vaimo/projects/<ProjectName>/meeting-notes/YYYY-mm-dd <meeting title>.md`
+- Non-project meeting → `Work/Vaimo/Meeting notes/<approved subfolder>/YYYY-mm-dd <meeting title>.md`
 
 Rules:
 - do not invoke `impersonator` for meeting transcripts
-- keep transcript body raw except checklist normalization
+  _Why: a transcript's value is in the participants' actual words — rewriting in the user's voice would distort attribution._
+- keep transcript body raw except checklist normalization (template at `assets/frontmatter-templates/meeting.md`)
 - frontmatter follows `AGENTS.md` wiki format (`tags`, `created`, `updated`, `related`, `summary`)
 - when content was imported from a Google Docs URL, add a `source` YAML property with the original document URL
 - for updates: run `obsidian outline path="<file>"` first to get heading structure, then read and merge without duplication
@@ -158,6 +186,10 @@ Google Docs create flow (use `obsidian move`, not `mv`):
 3. Move it to the approved final location using the CLI so wikilinks stay intact:
 
 ```bash
+# Project meeting
+obsidian move path="_raw/<doc-id>.md" to="Work/Vaimo/projects/<ProjectName>/meeting-notes/YYYY-mm-dd <meeting title>.md"
+
+# Non-project meeting
 obsidian move path="_raw/<doc-id>.md" to="Work/Vaimo/Meeting notes/<approved subfolder>/YYYY-mm-dd <meeting title>.md"
 ```
 
@@ -198,4 +230,37 @@ If a meeting note is accidentally saved before subfolder approval:
 
 1. Immediately print a short `kevin-mode` summary of the most important discussed points (2-4 bullets).
 2. Ask user to confirm if current folder is correct.
-3. If folder is wrong, move the file to the approved folder and confirm final path.
+3. If folder is wrong, move the file using `obsidian move path="<current>" to="<approved>"` (keeps wikilinks intact) and confirm final path.
+
+## Cleanup example: transcript wall-of-text → paragraphs
+
+A worked example of Step 2 body cleanup. The input is the kind of run-on
+text a Granola or Google Meet transcript produces; the output is what
+should land in the meeting note body.
+
+**Input (raw transcript paragraph):**
+
+```
+Me: Hey Mohammed thanks for jumping on. So the marketplace cutover - we've been seeing rounding errors on multi-vendor carts again. Webkul confirmed it's their core. Mohammed: yeah I saw the ticket. ETA on the patch? Me: two weeks at least according to Ivan. So I want to push the cutover to next sprint, let the patch land in UAT first. Mohammed: makes sense. I'll let the steerco know. Anything else? Me: yeah - I also want to talk about the runbook. Max owes us a draft. https://granola.ai/meet/abc-123
+```
+
+**Output (cleaned, paragraphed, with attribution where explicit):**
+
+```markdown
+Me: Hey Mohammed thanks for jumping on. So the marketplace cutover — we've been seeing rounding errors on multi-vendor carts again. Webkul confirmed it's their core.
+
+Mohammed: yeah I saw the ticket. ETA on the patch?
+
+Me: two weeks at least according to Ivan. So I want to push the cutover to next sprint, let the patch land in UAT first.
+
+Mohammed: makes sense. I'll let the steerco know. Anything else?
+
+Me: yeah — I also want to talk about the runbook. Max owes us a draft.
+```
+
+What changed:
+- Granola URL removed (private link, expires)
+- Wall of text split on speaker shifts; one idea per paragraph
+- `Me:` / `Mohammed:` labels preserved verbatim — both speakers are explicitly named in-line so attribution is safe
+- No content paraphrased, no tone changes
+- No action items extracted in body — Step 9 handles those
